@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepwiseBuilderGenerator", "StepwiseBuilderGenerator\StepwiseBuilderGenerator\StepwiseBuilderGenerator.csproj", "{69CD2CAA-1D63-43FC-98B7-09534260D5FB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepwiseBuilderGenerator.Sample", "StepwiseBuilderGenerator\StepwiseBuilderGenerator.Sample\StepwiseBuilderGenerator.Sample.csproj", "{4050EF48-F69B-41DE-AC25-9BF39A0A5007}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StepwiseBuilderGenerator.Tests", "StepwiseBuilderGenerator\StepwiseBuilderGenerator.Tests\StepwiseBuilderGenerator.Tests.csproj", "{43325844-8F4A-4029-B322-6BE099EA1D83}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{69CD2CAA-1D63-43FC-98B7-09534260D5FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69CD2CAA-1D63-43FC-98B7-09534260D5FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69CD2CAA-1D63-43FC-98B7-09534260D5FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69CD2CAA-1D63-43FC-98B7-09534260D5FB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4050EF48-F69B-41DE-AC25-9BF39A0A5007}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4050EF48-F69B-41DE-AC25-9BF39A0A5007}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4050EF48-F69B-41DE-AC25-9BF39A0A5007}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4050EF48-F69B-41DE-AC25-9BF39A0A5007}.Release|Any CPU.Build.0 = Release|Any CPU
+		{43325844-8F4A-4029-B322-6BE099EA1D83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43325844-8F4A-4029-B322-6BE099EA1D83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43325844-8F4A-4029-B322-6BE099EA1D83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43325844-8F4A-4029-B322-6BE099EA1D83}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
