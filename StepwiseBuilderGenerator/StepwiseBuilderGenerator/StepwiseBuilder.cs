@@ -17,6 +17,11 @@ public class GenerateSidePathForStepwiseBuilder()
 
 public class GenerateStepwiseBuilder
 {
+    public GenerateStepwiseBuilder SidePathFrom(string builderName, string stepName)
+    {
+        return this;
+    }
+    
     public GenerateStepwiseBuilder AddStep<T>(string stepName, string? fieldName = null)
     {
         return this;

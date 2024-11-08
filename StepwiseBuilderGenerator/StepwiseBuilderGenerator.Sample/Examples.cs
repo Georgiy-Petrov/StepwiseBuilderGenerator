@@ -34,6 +34,20 @@ namespace StepwiseBuilderGenerator.Sample
         private Windows _windows;
     }
 
+    public partial class HouseBuilderSidePath
+    {
+        public HouseBuilderSidePath()
+        {
+            new GenerateStepwiseBuilder()
+                .SidePathFrom("HouseBuilder", "SetRoof")
+                .AddStep<House.Walls>("SetWalls", "Walls")
+                .AddStep<House.Roof>("SetRoof")
+                .AddStep<Task<int>>("SetWindows")
+                .AddStep<int>("SetDoors")
+                .CreateBuilderFor<Task<House>>();
+        }
+    }
+
     [StepwiseBuilder]
     public partial class HouseBuilder
     {
