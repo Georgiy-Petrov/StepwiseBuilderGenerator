@@ -10,8 +10,8 @@ using static System.String;
 
 namespace StepwiseBuilderGenerator;
 
-//[Generator]
-public class StepwiseBuilderGenerator : IIncrementalGenerator
+[Generator]
+public class StepwiseBuilderSidePathGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -40,7 +40,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
         var originalBuildersProvider = statementsProvider.Select(
             static (sl, _) => sl
-                .Where(static s => 
+                .Where(static s =>
                     s.TryFindFirstNode<ObjectCreationExpressionSyntax>()
                         ?.Type.TryCast<IdentifierNameSyntax>()
                         ?.Identifier.Text == "GenerateStepwiseBuilder")
@@ -73,14 +73,14 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                 .Reverse()
                 .Where(static mi => mi.MethodName == "AddStep")
                 .Select(static (methodInfo, i) => new StepMethod(
-                   Order: Int32.Parse(i.ToString()),
-                   StepName: methodInfo.ArgumentList!.ToList()[0].Expression
-                       .TryCast<LiteralExpressionSyntax>()!.Token.ValueText,
-                   FieldName: methodInfo.ArgumentList!.ElementAtOrDefault(1)
-                       ?.Expression.TryCast<LiteralExpressionSyntax>()!.Token.ValueText,
-                   Type: methodInfo.TypeArguments!.Single()))
+                    Order: Int32.Parse(i.ToString()),
+                    StepName: methodInfo.ArgumentList!.ToList()[0].Expression
+                        .TryCast<LiteralExpressionSyntax>()!.Token.ValueText,
+                    FieldName: methodInfo.ArgumentList!.ElementAtOrDefault(1)
+                        ?.Expression.TryCast<LiteralExpressionSyntax>()!.Token.ValueText,
+                    Type: methodInfo.TypeArguments!.Single()))
                 .OrderBy(static step => step.Order)
-            );
+        );
 
         var classDeclaration = originalBuildersProvider.Select(static (invocation, _) =>
         {
@@ -113,52 +113,167 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             classDeclaration.Select(static (c, _) => (
                 c.TypeParameterList?.Parameters.Select(p => p.ToString()).ToList() ?? new List<string>(),
                 c.ConstraintClauses.Select(c => c.ToString()).ToImmutableHashSet()));
-        
+
         var usingsCollected = usings.Collect();
         var targetTypesCollected = targetType.Collect();
         var addStepInvocationsCollected = addStepInvocations.Collect();
         var classTypeParametersAndConstraintsCollected = classTypeParametersAndConstraints.Collect();
         var classNamesCollected = className.Collect();
-        
-        var generateBuildersCompilation =
+
+        var sidePathForBuilders = originalBuildersProvider.Select(static (invocation, _) =>
+            invocation
+                .CollectMethodsInChain()
+                .Reverse()
+                .Where(static mi => mi.MethodName == "SidePathFrom")
+                .Select(static mi =>
+                {
+                    var builderToExtendName =
+                        mi.ArgumentList!.ToList()[0]?.Expression.TryCast<LiteralExpressionSyntax>()!.Token
+                            .ValueText;
+
+                    var stepName =
+                        mi.ArgumentList!.ToList()[1]?.Expression.TryCast<LiteralExpressionSyntax>()!.Token
+                            .ValueText;
+
+                    return builderToExtendName is not null ? new SidePathInfo(builderToExtendName, stepName!) : null;
+                })
+                .SingleOrDefault());
+
+        var classDeclarationAndStepsOfBuilderToExtend =
+            sidePathForBuilders
+                .Combine(collectedClassDeclarations.Combine(addStepInvocationsCollected))
+                .Select(static (provider, _) =>
+                {
+                    var indexOf = provider.Right.Left.ToList()
+                        .FindIndex(c => c.Identifier.Text == provider.Left?.BuilderToExtendName);
+
+                    if (indexOf != -1)
+                    {
+                        return (
+                            provider.Right.Left.SingleOrDefault(
+                                c => c.Identifier.Text == provider.Left?.BuilderToExtendName),
+                            provider.Right.Right[indexOf]);
+                    }
+
+                    return new();
+                });
+
+        var buildersToExtendClasses =
+            classDeclarationAndStepsOfBuilderToExtend.Select(static (c, _) => c.Item1).Collect();
+
+        var buildersToExtendClassesNames =
+            buildersToExtendClasses.Select(static (c, _) => c.Select(c => c?.Identifier.Text.ToString()).ToList());
+
+        var namespaceOfBuilderToExtend = context.CompilationProvider
+            .Combine(buildersToExtendClasses).Select(static (compilationWithClassDeclaration, _) =>
+            {
+                var (compilation, classDeclaration) = compilationWithClassDeclaration;
+                return classDeclaration.Select(c =>
+                        c is not null ? compilation.GetSemanticModel(c.SyntaxTree).GetDeclaredSymbol(c) : null)
+                    .Select(static nt =>
+                        nt is not null ? Join(".", nt.ContainingNamespace.ConstituentNamespaces) : null).ToList();
+            });
+
+        var stepsOfBuilderToExtend = classDeclarationAndStepsOfBuilderToExtend.Select(static (c, _) => c.Item2);
+
+        var generateBuildersComplexCompilation =
             usingsCollected
                 .Combine(targetTypesCollected)
                 .Combine(addStepInvocationsCollected)
                 .Combine(@namespace)
                 .Combine(classTypeParametersAndConstraintsCollected)
-                .Combine(classNamesCollected);
-        
-        context.RegisterSourceOutput(generateBuildersCompilation, GenerateStepwiseBuilders);
+                .Combine(classNamesCollected)
+                .Combine(sidePathForBuilders.Collect())
+                .Combine(stepsOfBuilderToExtend.Collect())
+                .Combine(namespaceOfBuilderToExtend)
+                .Combine(buildersToExtendClassesNames);
+
+        Console.WriteLine("InitFinished: " + DateTime.Now);
+
+        context.RegisterSourceOutput(generateBuildersComplexCompilation, ComplexGenerateStepwiseBuilders);
     }
-    private void GenerateStepwiseBuilders(SourceProductionContext context,
-        (((((ImmutableArray<ImmutableHashSet<string>?> Left, ImmutableArray<string?> Right) Left,
+
+    private void ComplexGenerateStepwiseBuilders(SourceProductionContext context,
+        (((((((((ImmutableArray<ImmutableHashSet<string>> Left, ImmutableArray<string> Right) Left,
             ImmutableArray<IOrderedEnumerable<StepMethod>> Right) Left, List<string> Right) Left,
-            ImmutableArray<(List<string>, ImmutableHashSet<string>)> Right) Left, ImmutableArray<string> Right)
-            providers)
+            ImmutableArray<(List<string>, ImmutableHashSet<string>)> Right) Left, ImmutableArray<string> Right) Left,
+            ImmutableArray<SidePathInfo> Right) Left, ImmutableArray<IOrderedEnumerable<StepMethod>> Right) Left,
+            List<string> Right) Left, List<string> Right) valueTuple)
     {
         Console.WriteLine("BuilderStarted: " + DateTime.Now);
-        var (((((usings, targetType), addStepsInvocations), namespaces), constraintClauses), className) = providers;
+        var (((((((((usings, targetType), addStepsInvocations), namespaces), constraintClauses), className), sidePaths),
+            builderToExtendSteps), namespaceOfBuilderToExtend), buildersToExtendClassesNames) = valueTuple;
 
         for (var i = 0; i < usings.Length; i++)
         {
-            var builderUsings = usings[i];
+            var sidePathName = sidePaths.ElementAtOrDefault(i);
+            var stepsToExtend = builderToExtendSteps.ElementAtOrDefault(i)?.ToList();
+            var extendedStepIndex =
+                stepsToExtend?.ToList().FindIndex(s => s.StepName == sidePathName!.StepToExtendName) + 1;
+            string? extendedStep = null;
+            
+            if (extendedStepIndex.HasValue && extendedStepIndex != stepsToExtend!.Count)
+            {
+                extendedStep = stepsToExtend[extendedStepIndex.Value].StepName;
+            }
+            
+            else if (extendedStepIndex.HasValue && extendedStepIndex == stepsToExtend!.Count)
+            {
+                extendedStep = "Build";
+            }
+
+            var namespaceOfOriginalToBuilder = namespaceOfBuilderToExtend.ElementAtOrDefault(i);
+            var builderToExtendClassName = buildersToExtendClassesNames.ElementAtOrDefault(i);
+
+            var builderUsings = usings[i].Append(namespaceOfOriginalToBuilder is not null
+                ? $"using {namespaceOfOriginalToBuilder};"
+                : "");
             var builderTargetType = targetType[i];
             var builderAddSteps = addStepsInvocations[i].ToList();
             var builderNamespace = namespaces[i];
             var (builderTypeParameters, builderConstraints) = constraintClauses[i];
             var builderClassName = className[i];
 
-            var builderClass =
-                new StringBuilder(
-                    $$"""
-                      {{Join("\n", builderUsings)}}
 
-                      namespace {{builderNamespace}};{{"\n \n"}}
-                      """);
+            var interfaceNamesToImplement = new List<string>();
 
             var constraints = builderConstraints.Count > 0 ? Join("\n", builderConstraints) : Empty;
             var generics = builderTypeParameters.Count > 0 ? $"<{Join(",", builderTypeParameters)}>" : Empty;
-            var interfaceNamesToImplement = new List<string>();
+
+            StringBuilder AddUsingsAndNamespace(StringBuilder sb)
+            {
+                return sb.Append(
+                    $$"""
+                      {{Join("\n", builderUsings)}}
+
+                      namespace {{@builderNamespace}};{{"\n \n"}}
+                      """);
+            }
+
+            StringBuilder AddConstructor(StringBuilder sb)
+            {
+                if (builderToExtendClassName is null)
+                {
+                    return sb;
+                }
+
+                return sb.Append(
+                    $$"""
+                          public {{builderClassName}}({{builderToExtendClassName}}{{generics}} originalBuilder)
+                          {
+                              OriginalBuilder = originalBuilder;
+                          }
+                          
+                          public {{builderToExtendClassName}}{{generics}} OriginalBuilder;
+
+
+                      """);
+            }
+
+            var builderClass =
+                new StringBuilder();
+
+            AddUsingsAndNamespace(builderClass);
 
             for (var s = 0; s < builderAddSteps.Count; s++)
             {
@@ -173,8 +288,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                       {
                           I{{builderClassName}}{{nextStepName}}{{generics}} {{step.StepName}}({{step.Type}} value);
                       }
-                      
-                      
+
+
                       """
                 );
             }
@@ -188,7 +303,9 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                   public interface I{{builderClassName}}Build{{generics}} {{constraints}}
                   {
                       {{builderTargetType}} Build(Func<{{builderClassName}}{{generics}}, {{builderTargetType}}> buildFunc);
-                  }{{"\n \n"}}
+                  }
+
+
                   """);
 
             builderClass.Append(
@@ -197,6 +314,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                   {
 
                   """);
+
+            AddConstructor(builderClass);
 
             for (var s = 0; s < builderAddSteps.Count; s++)
             {
@@ -233,6 +352,31 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                       }
                   }
                   """);
+
+            StringBuilder AddFactoryExtensionClass(StringBuilder sb)
+            {
+                if (builderToExtendClassName is null)
+                {
+                    return sb;
+                }
+
+                return sb.Append(
+                    $$"""
+
+
+                      public static class Init{{builderClassName}}Extensions
+                      {
+                          public static {{interfaceNamesToImplement[1]}} {{builderAddSteps[0].StepName}}{{generics}}(this I{{builderToExtendClassName}}{{extendedStep}}{{generics}} originalStep, {{builderAddSteps[0].Type}} value)
+                          {
+                              return new {{builderClassName}}{{generics}}(({{builderToExtendClassName}}{{generics}}) originalStep).{{builderAddSteps[0].StepName}}(value);
+                          }
+                      }
+
+                      """);
+            }
+
+
+            AddFactoryExtensionClass(builderClass);
 
             Console.WriteLine("BuilderFinished: " + DateTime.Now);
             context.AddSource($"{builderClassName}.g.cs", builderClass.ToString());
