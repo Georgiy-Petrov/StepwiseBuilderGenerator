@@ -49,33 +49,33 @@ namespace StepwiseBuilderGenerator.Sample
         }
     }
 
-     public static class HouseBuilderExtensions
-     {
-          public static IHouseBuilderSetWalls HouseBuilder()
-          {
-              return new HouseBuilder();
-          }
-                  public static async Task<House> Build(this IHouseBuilderBuild builder)
-          {
-              return await builder.Build(async b =>
-              {
-                  var a = await b.SetWindowsValue;
-                  return new House(b.Walls, b.SetRoofValue, new House.Doors(), new House.Windows());
-              });
-          }
-     }
-
-     class Test
-     {
-         public async Task Some()
-         {
-             var house = await HouseBuilderExtensions.HouseBuilder()
-                  .SetWalls(new House.Walls())
-                  .SetRoof(new House.Roof())
-                  .SetWindows(Task.FromResult(5))
-                  .SetDoors(43)
-                  .Build();
-         }
-     }
+     // public static class HouseBuilderExtensions
+     // {
+     //      public static IHouseBuilderSetWalls HouseBuilder()
+     //      {
+     //          return new HouseBuilder();
+     //      }
+     //              public static async Task<House> Build(this IHouseBuilderBuild builder)
+     //      {
+     //          return await builder.Build(async b =>
+     //          {
+     //              var a = await b.SetWindowsValue;
+     //              return new House(b.Walls, b.SetRoofValue, new House.Doors(), new House.Windows());
+     //          });
+     //      }
+     // }
+     //
+     // class Test
+     // {
+     //     public async Task Some()
+     //     {
+     //         var house = await HouseBuilderExtensions.HouseBuilder()
+     //              .SetWalls(new House.Walls())
+     //              .SetRoof(new House.Roof())
+     //              .SetWindows(Task.FromResult(5))
+     //              .SetDoors(43)
+     //              .Build();
+     //     }
+     // }
 }
 

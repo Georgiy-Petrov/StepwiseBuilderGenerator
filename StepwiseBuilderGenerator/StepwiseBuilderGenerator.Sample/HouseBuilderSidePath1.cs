@@ -10,10 +10,19 @@ public partial class HouseBuilderSidePath
     {
         new GenerateStepwiseBuilder()
             .SidePathFrom("HouseBuilder", "SetDoors")
-            .AddStep<House.Walls>("SetWalls", "Walls")
-            .AddStep<House.Roof>("SetRoof")
-            .AddStep<Task<int>>("SetWindows")
-            .AddStep<int>("SetDoors")
+            .AddStep<int>("Some")
+            .CreateBuilderFor<Task<House>>();
+    }
+}
+
+[StepwiseBuilder]
+public partial class HouseBuilderSidePath1
+{
+    public HouseBuilderSidePath1()
+    {
+        new GenerateStepwiseBuilder()
+            .SidePathFrom("HouseBuilderSidePath", "Some")
+            .AddStep<int>("Some2")
             .CreateBuilderFor<Task<House>>();
     }
 }
