@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace StepwiseBuilderGenerator.Sample
@@ -36,7 +37,7 @@ namespace StepwiseBuilderGenerator.Sample
     }
 
     [StepwiseBuilder]
-    public partial class HouseBuilder
+    public partial class HouseBuilder<T, T1> where T1 : List<int>
     {
         public HouseBuilder()
         {
@@ -49,33 +50,33 @@ namespace StepwiseBuilderGenerator.Sample
         }
     }
 
-     // public static class HouseBuilderExtensions
-     // {
-     //      public static IHouseBuilderSetWalls HouseBuilder()
-     //      {
-     //          return new HouseBuilder();
-     //      }
-     //              public static async Task<House> Build(this IHouseBuilderBuild builder)
-     //      {
-     //          return await builder.Build(async b =>
-     //          {
-     //              var a = await b.SetWindowsValue;
-     //              return new House(b.Walls, b.SetRoofValue, new House.Doors(), new House.Windows());
-     //          });
-     //      }
-     // }
+      //public static class HouseBuilderExtensions
+      //{
+      //     public static IHouseBuilderSetWalls HouseBuilder()
+      //     {
+      //         return new HouseBuilder();
+      //     }
+      //      public static async Task<House> Build(this IHouseBuilderBuild builder)
+      //     {
+      //         return await builder.Build(async b =>
+      //         {
+      //             var a = await b.SetWindowsValue;
+      //             return new House(b.Walls, b.SetRoofValue, new House.Doors(), new House.Windows());
+      //         });
+      //     }
+      //}
      //
-     // class Test
-     // {
-     //     public async Task Some()
-     //     {
-     //         var house = await HouseBuilderExtensions.HouseBuilder()
-     //              .SetWalls(new House.Walls())
-     //              .SetRoof(new House.Roof())
-     //              .SetWindows(Task.FromResult(5))
-     //              .SetDoors(43)
-     //              .Build();
-     //     }
-     // }
+      //class Test
+      //{
+      //    public async Task Some()
+      //    {
+      //        var house = await HouseBuilderExtensions.HouseBuilder<int, int>()
+      //             .SetWalls(new House.Walls())
+      //             .SetRoof(new House.Roof())
+      //             .SetWindows(Task.FromResult(5))
+      //             .SetDoors(43)
+      //             .Build();
+      //    }
+      //}
 }
 
