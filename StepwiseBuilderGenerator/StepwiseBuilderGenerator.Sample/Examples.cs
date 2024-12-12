@@ -4,79 +4,197 @@ using System.Threading.Tasks;
 
 namespace StepwiseBuilderGenerator.Sample
 {
-    public class House
+    public interface MockInterface
     {
-        public House(Walls walls, Roof roof, Doors doors, Windows windows)
-        {
-            _walls = walls;
-            _roof = roof;
-            _doors = doors;
-            _windows = windows;
-        }
-
-        public class Walls
-        {
-        }
-        
-        public class Roof
-        {
-        }
-        
-        public class Doors
-        {
-        }
-        
-        public class Windows
-        {
-        }
-        
-        private Walls _walls;
-        private Roof _roof;
-        private Doors _doors;
-        private Windows _windows;
     }
 
     [StepwiseBuilder]
-    public partial class HouseBuilder<T, T1> where T1 : List<int>
+    public partial class SimpleBuilder
     {
-        public HouseBuilder()
+        public SimpleBuilder()
         {
             new GenerateStepwiseBuilder()
-                .AddStep<House.Walls>("SetWalls", "Walls")
-                .AddStep<House.Roof>("SetRoof")
-                .AddStep<Task<int>>("SetWindows")
-                .AddStep<int>("SetDoors")
-                .CreateBuilderFor<Task<House>>();
+                .AddStep<int>("FirstStep")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep")
+                .CreateBuilderFor<string>();
+        }
+    }
+    
+    //Will not produce builder
+    [StepwiseBuilder]
+    public partial class SimpleBuilderWithoutNewBuilderDeclaration
+    {
+        public SimpleBuilderWithoutNewBuilderDeclaration()
+        {
+
         }
     }
 
-      //public static class HouseBuilderExtensions
-      //{
-      //     public static IHouseBuilderSetWalls HouseBuilder()
-      //     {
-      //         return new HouseBuilder();
-      //     }
-      //      public static async Task<House> Build(this IHouseBuilderBuild builder)
-      //     {
-      //         return await builder.Build(async b =>
-      //         {
-      //             var a = await b.SetWindowsValue;
-      //             return new House(b.Walls, b.SetRoofValue, new House.Doors(), new House.Windows());
-      //         });
-      //     }
-      //}
-     //
-      //class Test
-      //{
-      //    public async Task Some()
-      //    {
-      //        var house = await HouseBuilderExtensions.HouseBuilder<int, int>()
-      //             .SetWalls(new House.Walls())
-      //             .SetRoof(new House.Roof())
-      //             .SetWindows(Task.FromResult(5))
-      //             .SetDoors(43)
-      //             .Build();
-      //    }
-      //}
-}
+    
+    [StepwiseBuilder]
+    public partial class SimpleBuilderWithOneStepNameFieldName
+    {
+        public SimpleBuilderWithOneStepNameFieldName()
+        {
+            new GenerateStepwiseBuilder()
+                .AddStep<int>("FirstStep", "First")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep")
+                .CreateBuilderFor<string>();
+        }
+    }
+    
+    [StepwiseBuilder]
+    public partial class SimpleBuilderWithSeveralStepNameFieldNames
+    {
+        public SimpleBuilderWithSeveralStepNameFieldNames()
+        {
+            new GenerateStepwiseBuilder()
+                .AddStep<int>("FirstStep", "First")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep", "Fourth")
+                .CreateBuilderFor<string>();
+        }
+    }
+    
+    [StepwiseBuilder]
+    public partial class SimpleBuilderWithSeveralStatementsInConstructor
+    {
+        public SimpleBuilderWithSeveralStatementsInConstructor()
+        {
+            new object();
+            new object();
+            new object();
+            
+            new GenerateStepwiseBuilder()
+                .AddStep<int>("FirstStep", "First")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep")
+                .CreateBuilderFor<string>();
+            
+            new object();
+            new object();
+            new object();
+        }
+    }
+    
+    [StepwiseBuilder]
+    public partial class BuilderWithGenericParameter<T> where T : Exception
+    {
+        public BuilderWithGenericParameter()
+        {
+            new GenerateStepwiseBuilder()
+                .AddStep<T>("FirstStep", "First")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep")
+                .CreateBuilderFor<string>();
+        }
+    }
+    
+    [StepwiseBuilder]
+    public partial class BuilderWithGenericParameters<T1, T2, T3>
+    where T1 : Exception
+    where T2 : MockInterface
+    {
+        public BuilderWithGenericParameters()
+        {
+            new GenerateStepwiseBuilder()
+                .AddStep<T1>("FirstStep", "First")
+                .AddStep<T2>("SecondStep")
+                .AddStep<T3>("ThirdStep")
+                .AddStep<object>("FourthStep")
+                .CreateBuilderFor<string>();
+        }
+    }
+    
+    //Will not produce builder
+    public partial class SimpleBuilderWithoutAttribute
+    {
+        public SimpleBuilderWithoutAttribute()
+        {
+            new GenerateStepwiseBuilder()
+                .AddStep<int>("FirstStep")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep")
+                .CreateBuilderFor<string>();
+        }
+    }
+    
+    //Will not produce builder
+    [StepwiseBuilder]
+    public partial class BuilderWithParametersInConstructor
+    {
+        public BuilderWithParametersInConstructor(int a1)
+        {
+            new GenerateStepwiseBuilder()
+                .AddStep<int>("FirstStep")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep")
+                .CreateBuilderFor<string>();
+        }
+        
+        public BuilderWithParametersInConstructor(int a1, int a2, int a3)
+        {
+            new GenerateStepwiseBuilder()
+                .AddStep<int>("FirstStep")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep")
+                .CreateBuilderFor<string>();
+        }
+    }
+    
+    //Will not produce builder
+    [StepwiseBuilder]
+    public partial class BuilderWithoutCreateBuilderForCall
+    {
+        public BuilderWithoutCreateBuilderForCall()
+        {
+            new GenerateStepwiseBuilder()
+                .AddStep<int>("FirstStep")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep");
+        }
+    }
+    
+    //Will not produce builder
+    [StepwiseBuilder]
+    public partial class BuilderWithoutAddStepCalls
+    {
+        public BuilderWithoutAddStepCalls()
+        {
+            new GenerateStepwiseBuilder()
+                .CreateBuilderFor<string>();
+        }
+    }
+    
+    //Will not produce builder
+    [StepwiseBuilder]
+    public partial class BuilderWithEmptyConstructor
+    {
+        public BuilderWithEmptyConstructor()
+        {
 
+        }
+    }
+    
+    //Produces only first builder declaration
+    [StepwiseBuilder]
+    public partial class BuilderWithSeveralGenerateDeclarations
+    {
+        public BuilderWithSeveralGenerateDeclarations()
+        {
+            new GenerateStepwiseBuilder()
+                .AddStep<int>("FirstStep")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep")
+                .CreateBuilderFor<string>();
+            
+            new GenerateStepwiseBuilder()
+                .AddStep<int>("FirstStep")
+                .AddStep<string>("SecondStep")
+                .AddStep<object>("ThirdStep")
+                .CreateBuilderFor<string>();
+        }
+    }
+}

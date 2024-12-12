@@ -27,16 +27,23 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         m => m is ConstructorDeclarationSyntax { ParameterList.Parameters.Count: 0 })?
                     .TryCast<ConstructorDeclarationSyntax>()?.Body?.Statements;
 
-                var generateBuilderStatementPresence = statements?.SingleOrDefault(s => s
+                var generateBuilderStatementCall = statements?.FirstOrDefault(s => s
                     .TryFindFirstNode<ObjectCreationExpressionSyntax>()?.Type.TryCast<IdentifierNameSyntax>()
                     ?.Identifier.Text == "GenerateStepwiseBuilder");
-
-                return statements is not { Count: 0 } && generateBuilderStatementPresence is not null;
+                
+                var createBuilderForCallPresence = 
+                    generateBuilderStatementCall?
+                        .TryCast<ExpressionStatementSyntax>()?.Expression
+                        .TryCast<InvocationExpressionSyntax>()?.Expression
+                        .TryCast<MemberAccessExpressionSyntax>()?
+                        .Name.Identifier.Text == "CreateBuilderFor";
+                
+                return statements is not { Count: 0 } && generateBuilderStatementCall is not null && createBuilderForCallPresence is true;
             },
             static (ctx, _) =>
                 ctx.TargetNode
                     .TryCast<ClassDeclarationSyntax>()!.Members.First(m => m is ConstructorDeclarationSyntax)
-                    .TryCast<ConstructorDeclarationSyntax>()!.Body!.Statements.Single(static s => s
+                    .TryCast<ConstructorDeclarationSyntax>()!.Body!.Statements.First(static s => s
                         .TryCast<ExpressionStatementSyntax>()?.Expression
                         .TryCast<InvocationExpressionSyntax>()?.Expression
                         .TryCast<MemberAccessExpressionSyntax>()?.Name.Identifier.Text == "CreateBuilderFor")
@@ -190,11 +197,11 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
     }
 
     private void ComplexGenerateStepwiseBuilders(SourceProductionContext context,
-        (((((((((ImmutableArray<ImmutableHashSet<string>> Left, ImmutableArray<string> Right) Left,
+        (((((((((ImmutableArray<ImmutableHashSet<string>?> Left, ImmutableArray<string?> Right) Left,
             ImmutableArray<IOrderedEnumerable<StepMethod>> Right) Left, List<string> Right) Left,
             ImmutableArray<(string, string)> Right) Left, ImmutableArray<string> Right) Left,
-            ImmutableArray<SidePathInfo> Right) Left, ImmutableArray<IOrderedEnumerable<StepMethod>> Right) Left,
-            List<string> Right) Left, List<(string, string)> Right) valueTuple)
+            ImmutableArray<SidePathInfo?> Right) Left, ImmutableArray<IOrderedEnumerable<StepMethod>> Right) Left,
+            List<string?> Right) Left, List<(string?, string?)> Right) valueTuple)
     {
         var sw = Stopwatch.StartNew();
         var (((((((((usings, targetType), addStepsInvocations), namespaces), constraintClauses), className), sidePaths),
@@ -220,79 +227,53 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
             var namespaceOfOriginalToBuilder = namespaceOfBuilderToExtend.ElementAtOrDefault(i);
             var builderToExtendClassName = buildersToExtendClassesNames.ElementAtOrDefault(i).Item1;
-            var builderToExtendGenerics = $"<{buildersToExtendClassesNames.ElementAtOrDefault(i).Item2}>";
+            var builderToExtendGenerics = buildersToExtendClassesNames.ElementAtOrDefault(i).Item2 is not null
+                ? $"<{buildersToExtendClassesNames.ElementAtOrDefault(i).Item2}>"
+                : "";
 
             var builderUsings = usings[i]
                 .Append(namespaceOfOriginalToBuilder is not null
                     ? $"using {namespaceOfOriginalToBuilder};"
                     : "");
+
             var builderTargetType = targetType[i];
             var builderAddSteps = addStepsInvocations[i].ToList();
             var builderNamespace = namespaces[i];
             var (builderTypeParameters, builderConstraints) = constraintClauses[i];
             var builderClassName = className[i];
 
-
             var interfaceNamesToImplement = new List<string>();
 
             var constraints = builderConstraints;
             var generics = builderTypeParameters;
 
-            StringBuilder AddUsingsAndNamespace(StringBuilder sb)
-            {
-                return sb.Append(
-                    $$"""
-                      {{Join("\n", builderUsings)}}
-
-                      namespace {{@builderNamespace}};{{"\n \n"}}
-                      """);
-            }
-
-            StringBuilder AddConstructor(StringBuilder sb)
-            {
-                if (builderToExtendClassName is null)
-                {
-                    return sb;
-                }
-
-                return sb.Append(
-                    $$"""
-                          public {{builderClassName}}({{builderToExtendClassName}}{{builderToExtendGenerics}} originalBuilder)
-                          {
-                              OriginalBuilder = originalBuilder;
-                          }
-                          
-                          public {{builderToExtendClassName}}{{builderToExtendGenerics}} OriginalBuilder;
-
-
-                      """);
-            }
-
             var builderClass =
                 new StringBuilder();
 
-            AddUsingsAndNamespace(builderClass);
+            builderClass.Append(
+                $$"""
+                  {{Join("\n", builderUsings)}}
 
-            if (builderAddSteps is not null)
+                  namespace {{builderNamespace}};{{"\n \n"}}
+                  """);
+
+            for (var s = 0; s < builderAddSteps.Count; s++)
             {
-                for (var s = 0; s < builderAddSteps.Count; s++)
-                {
-                    var step = builderAddSteps[s];
-                    var nextStepName = s != builderAddSteps.Count - 1 ? builderAddSteps[s + 1].StepName : "Build";
-                    var interfaceName = $"I{builderClassName}{step.StepName}{generics}";
-                    interfaceNamesToImplement.Add(interfaceName);
+                var step = builderAddSteps[s];
+                var nextStepName = s != builderAddSteps.Count - 1 ? builderAddSteps[s + 1].StepName : "Build";
+                var interfaceName = $"I{builderClassName}{step.StepName}{generics}";
+                interfaceNamesToImplement.Add(interfaceName);
 
-                    builderClass.Append(
-                        $$"""
-                          public interface {{interfaceName}} {{constraints}}
-                          {
-                              I{{builderClassName}}{{nextStepName}}{{generics}} {{step.StepName}}({{step.Type}} value);
-                          }
+                builderClass.Append(
+                    $$"""
+                      public interface {{interfaceName}} {{constraints}}
+                      {
+                          I{{builderClassName}}{{nextStepName}}{{generics}} {{step.StepName}}({{step.Type}} value);
+                      }
 
 
-                          """
-                    );
-                }
+                      """
+                );
             }
 
             var buildInterfaceName = $"I{builderClassName}Build{generics}";
@@ -316,17 +297,27 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
                   """);
 
-            AddConstructor(builderClass);
-
-            if (builderAddSteps is not null)
+            if (builderToExtendClassName is not null)
             {
-                for (var s = 0; s < builderAddSteps.Count; s++)
-                {
-                    var step = builderAddSteps[s];
-                    var fieldName = step.FieldName ?? step.StepName + "Value";
-                    var field = $"    public {step.Type} {fieldName};\n";
-                    builderClass.Append(field);
-                }
+                builderClass.Append(
+                    $$"""
+                          public {{builderClassName}}({{builderToExtendClassName}}{{builderToExtendGenerics}} originalBuilder)
+                          {
+                              OriginalBuilder = originalBuilder;
+                          }
+                          
+                          public {{builderToExtendClassName}}{{builderToExtendGenerics}} OriginalBuilder;
+
+
+                      """);
+            }
+
+            for (var s = 0; s < builderAddSteps.Count; s++)
+            {
+                var step = builderAddSteps[s];
+                var fieldName = step.FieldName ?? step.StepName + "Value";
+                var field = $"    public {step.Type} {fieldName};\n";
+                builderClass.Append(field);
             }
 
             builderClass.Append("\n");
@@ -354,17 +345,36 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                       {
                           return buildFunc(this);
                       }
-                  }
                   """);
 
-            StringBuilder AddFactoryExtensionClass(StringBuilder sb)
-            {
-                if (builderToExtendClassName is null)
-                {
-                    return sb;
-                }
+            builderClass.Append(
+                $$"""
+                  
+                  
+                      public enum Steps
+                      {
 
-                return sb.Append(
+                  """);
+
+            foreach (var stepInfo in builderAddSteps)
+            {
+                builderClass.Append(
+                    $$"""
+                              {{stepInfo.StepName}},
+
+                      """);
+            }
+
+            builderClass.Append(
+                $$"""
+                      }
+                  }
+
+                  """);
+
+            if (builderToExtendClassName is not null)
+            {
+                builderClass.Append(
                     $$"""
 
 
@@ -378,9 +388,6 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
                       """);
             }
-
-
-            AddFactoryExtensionClass(builderClass);
 
             sw.Stop();
             Console.WriteLine($"Builder generated in {sw.Elapsed}");
