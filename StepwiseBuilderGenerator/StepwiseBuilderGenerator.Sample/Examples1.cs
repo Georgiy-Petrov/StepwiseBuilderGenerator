@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Generic;
 
-namespace StepwiseBuilderGenerator.Sample
+namespace StepwiseBuilderGenerator.Sample3
 {
     public interface MockInterface
     {
@@ -13,6 +12,7 @@ namespace StepwiseBuilderGenerator.Sample
         public SimpleBuilder()
         {
             new GenerateStepwiseBuilder()
+                .SidePathFrom("SimpleBuilder", "FirstStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -79,9 +79,7 @@ namespace StepwiseBuilderGenerator.Sample
     }
     
     [StepwiseBuilder]
-    public partial class BuilderWithGenericParameter<T, T1> 
-        where T : Exception, IList<T>
-        where T1 : Exception
+    public partial class BuilderWithGenericParameter<T> where T : Exception
     {
         public BuilderWithGenericParameter()
         {

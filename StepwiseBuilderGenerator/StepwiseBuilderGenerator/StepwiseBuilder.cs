@@ -5,6 +5,9 @@ namespace StepwiseBuilderGenerator;
 [AttributeUsage(AttributeTargets.Class)]
 public class StepwiseBuilder : Attribute
 {
+    public StepwiseBuilder(bool buildersWithFullyQualifiedNames = false)
+    {
+    }
 }
 
 public class GenerateStepwiseBuilder
@@ -14,7 +17,7 @@ public class GenerateStepwiseBuilder
         return this;
     }
     
-    public GenerateStepwiseBuilder AddStep<T>(string stepName, string? fieldName = null)
+    public GenerateStepwiseBuilder AddStep<TArgument>(string stepName, string? fieldName = null)
     {
         return this;
     }

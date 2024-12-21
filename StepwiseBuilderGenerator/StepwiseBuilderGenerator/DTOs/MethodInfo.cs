@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace StepwiseBuilderGenerator;
+namespace StepwiseBuilderGenerator.DTOs;
 
 public record MethodInfo(string MethodName, IEnumerable<string>? TypeArguments, IEnumerable<ArgumentSyntax>? ArgumentList)
 {
