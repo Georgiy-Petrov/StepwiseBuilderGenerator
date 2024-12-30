@@ -122,8 +122,9 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     builderNamespace);
             }
         );
-        
-        var stepwiseBuildersInfoForExtension = context.SyntaxProvider.ForAttributeWithMetadataName(typeof(StepwiseBuilder).FullName!,
+
+        var stepwiseBuildersInfoForExtension = context.SyntaxProvider.ForAttributeWithMetadataName(
+            typeof(StepwiseBuilder).FullName!,
             static (node, _) =>
             {
                 var statements = node
@@ -161,10 +162,6 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
                 var builderNamespace = GetNamespace(classDeclaration);
 
-                var classTypeParametersAndConstraints =
-                    (classDeclaration.TypeParameterList?.Parameters.ToString() ?? "",
-                        classDeclaration.ConstraintClauses.ToString());
-                
                 var usings =
                     invocation?.Ancestors()
                         .Select(static a =>
@@ -177,12 +174,13 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         .Prepend("using System;")
                         .Distinct()
                         .ToEquatableArray();
-                
-                return new ExtendedBuilderInfo(builderNamespace, classDeclaration.Identifier.ToString(), classTypeParametersAndConstraints, usings);
+
+                return new ExtendedBuilderInfo(builderNamespace, classDeclaration.Identifier.ToString(), usings);
             }
         );
-        
-    context.RegisterSourceOutput(statementsProvider.Combine(stepwiseBuildersInfoForExtension.Collect()), GenerateStepwiseBuilders);
+
+        context.RegisterSourceOutput(statementsProvider.Combine(stepwiseBuildersInfoForExtension.Collect()),
+            GenerateStepwiseBuilders);
     }
 
     private static ClassDeclarationSyntax? GetClassDeclaration(InvocationExpressionSyntax? invocation)
@@ -250,23 +248,19 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         (BuilderInfo Left, ImmutableArray<ExtendedBuilderInfo> Right) tuple)
     {
         var (builderInfo, builderToExtendInfo) = tuple;
-        
+
         var builderToExtendClassName = builderInfo.SidePathInfo?.BuilderToExtendName;
-        string? builderToExtendConstraints = null;
-        string? builderToExtendGenerics = null;
 
         var builderUsings = builderInfo.Usings;
-        
+
         if (builderToExtendInfo.FirstOrDefault(info =>
-                info?.Name == builderInfo.SidePathInfo?.BuilderToExtendName) is { Generics: not null })
+                info?.Name == builderInfo.SidePathInfo?.BuilderToExtendName) is not null)
         {
             var info = builderToExtendInfo.First(n =>
                 n?.Name == builderInfo.SidePathInfo?.BuilderToExtendName);
 
-            builderUsings = builderUsings.Append($"using {info!.Namespace};").Union(info.Usings ?? []).ToEquatableArray();
-
-            builderToExtendGenerics = info!.Generics.Value.Item1.Split(',').Aggregate(new StringBuilder(), (acc, current) => acc.Append(current + "OriginalGeneric, ")).ToString().TrimEnd().TrimEnd(',');
-            builderToExtendConstraints = info!.Generics.Value.Item2;
+            builderUsings = builderUsings.Append($"using {info.Namespace};").Union(info.Usings ?? [])
+                .ToEquatableArray();
         }
 
         var builderTargetType = builderInfo.TargetType;
@@ -277,25 +271,17 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
         var interfaceNamesToImplement = new List<string>();
 
-        var constraints = builderConstraints is not null ? builderConstraints + "\n" + builderToExtendConstraints : null;
         string? generics = null;
 
         if (builderTypeParameters is not null && builderTypeParameters is not "")
         {
-            generics = builderToExtendGenerics is not null ? "<" + builderTypeParameters + "," + builderToExtendGenerics + ">" : "<" + builderTypeParameters + ">";
-        }
-        
-        else if (builderTypeParameters is null || builderTypeParameters is "")
-        {
-            generics = "<" + builderToExtendGenerics + ">";
+            generics = "<" + builderTypeParameters + ">";
         }
 
         if (generics == "<>")
         {
             generics = null;
         }
-
-        builderToExtendGenerics = "<" + builderToExtendGenerics + ">";
 
         var builderClass =
             new StringBuilder();
@@ -316,7 +302,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
             builderClass.Append(
                 $$"""
-                  public interface {{interfaceName}} {{constraints}}
+                  public interface {{interfaceName}} {{builderConstraints}}
                   {
                       I{{builderClassName}}{{nextStepName}}{{generics}} {{step.StepName}}({{step.Type}} value);
                   }
@@ -332,7 +318,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         builderClass.Append(
             $$"""
 
-              public interface I{{builderClassName}}Build{{generics}} {{constraints}}
+              public interface I{{builderClassName}}Build{{generics}} {{builderConstraints}}
               {
                   {{builderTargetType}} Build(Func<{{builderClassName}}{{generics}}, {{builderTargetType}}> buildFunc);
               }
@@ -342,7 +328,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
         builderClass.Append(
             $$"""
-              public partial class {{builderClassName}}{{generics}} : {{Join(",", interfaceNamesToImplement)}} {{constraints}}
+              public partial class {{builderClassName}}{{generics}} : {{Join(",", interfaceNamesToImplement)}} {{builderConstraints}}
               {
 
               """);
@@ -351,12 +337,12 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         {
             builderClass.Append(
                 $$"""
-                      public {{builderClassName}}({{builderToExtendClassName}}{{builderToExtendGenerics}} originalBuilder)
+                      public {{builderClassName}}({{builderToExtendClassName}}{{generics}} originalBuilder)
                       {
                           OriginalBuilder = originalBuilder;
                       }
                       
-                      public {{builderToExtendClassName}}{{builderToExtendGenerics}} OriginalBuilder;
+                      public {{builderToExtendClassName}}{{generics}} OriginalBuilder;
 
 
                   """);
@@ -430,15 +416,15 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
                   public static class Init{{builderClassName}}Extensions
                   {
-                      public static {{interfaceNamesToImplement[1]}} {{builderAddSteps.GetArray()![0].StepName}}{{generics}}(this I{{builderToExtendClassName}}{{builderInfo.SidePathInfo!.StepToExtendName}}{{builderToExtendGenerics}} originalStep, {{builderAddSteps.GetArray()![0].Type}} value) {{constraints}}
+                      public static {{interfaceNamesToImplement[1]}} {{builderAddSteps.GetArray()![0].StepName}}{{generics}}(this I{{builderToExtendClassName}}{{builderInfo.SidePathInfo!.StepToExtendName}}{{generics}} originalStep, {{builderAddSteps.GetArray()![0].Type}} value) {{builderConstraints}}
                       {
-                          return new {{builderClassName}}{{generics}}(({{builderToExtendClassName}}{{builderToExtendGenerics}}) originalStep).{{builderAddSteps.GetArray()![0].StepName}}(value);
+                          return new {{builderClassName}}{{generics}}(({{builderToExtendClassName}}{{generics}}) originalStep).{{builderAddSteps.GetArray()![0].StepName}}(value);
                       }
                   }
 
                   """);
         }
 
-        context.AddSource($"{builderNamespace + "." + builderClassName + DateTime.Now.Second}.g.cs", builderClass.ToString());
+        context.AddSource($"{builderNamespace + "." + builderClassName}.g.cs", builderClass.ToString());
     }
 }
