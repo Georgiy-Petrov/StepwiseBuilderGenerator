@@ -452,10 +452,27 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         sourceBuilder.Append($$"""
                                    }
                                }
-
+                               
                                """);
 
-        // 9) If this builder extends another, generate an extension method to jump into the new builder
+        // 9) If this is base builder, Generate factory method for each non-Branch builder
+        if (builderToExtendName is null && stepsArray.FirstOrDefault() is not null)
+        { 
+            var returnType = interfaceNames[0];
+            
+            sourceBuilder.Append($$"""
+                                   public static partial class StepwiseBuilders
+                                   {
+                                       public static {{returnType}} {{className}}{{genericParams}}() {{constraints}}
+                                       {
+                                            return new {{className}}{{genericParams}}();
+                                       }
+                                   }
+
+                                   """);
+        }
+
+        // 10) If this builder extends another, generate an extension method to jump into the new builder
         if (builderToExtendName is not null)
         {
             var firstStepInfo = stepsArray[0];
@@ -480,8 +497,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                    """);
         }
 
-        // 10) Finally, add the generated code to the compilation
-        var hintName = $"{namespaceName}.{className}.g.cs";
+        // 11) Finally, add the generated code to the compilation
+        var hintName = $"{className}.g.cs";
         context.AddSource(hintName, sourceBuilder.ToString());
     }
 }

@@ -180,3 +180,9 @@ Each generated builder class includes **`enum Steps`** listing all steps (exclud
 were declared. You might use this for logging, debugging, or reflection-based logic if desired.
 
 ---
+
+## Factory Methods in StepwiseBuilders
+
+For each generated base builder, the generator also provides a **static factory method** within the `StepwiseBuilders` partial class. These methods allow you to conveniently initialize a builder without directly instantiating the generated partial class.
+
+---
