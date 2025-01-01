@@ -1,6 +1,8 @@
 # Stepwise Builder Generator
 
-This repository provides a **Source Generator** that creates strongly-typed, stepwise “fluent” builders for your types. You simply annotate a class with `[StepwiseBuilder]` and specify the steps you need in the class’s parameterless constructor. The source generator then produces a partial class containing builder interfaces and step methods.
+This repository provides a **Source Generator** that creates strongly-typed, stepwise “fluent” builders for your types.
+You simply annotate a class with `[StepwiseBuilder]` and specify the steps you need in the class’s parameterless
+constructor. The source generator then produces a partial class containing builder interfaces and step methods.
 
 ## Why Use Stepwise Builders?
 
@@ -13,14 +15,16 @@ This repository provides a **Source Generator** that creates strongly-typed, ste
 1. **Annotate a class with `[StepwiseBuilder]`.**
 2. **Inside the parameterless constructor**, create a chain of methods using `GenerateStepwiseBuilder()`:
     - **`AddStep<TArgument>(stepName, fieldName = null)`**: adds a step to capture a value of type `TArgument`.
-    - **`BranchFrom("BaseBuilderName", "BaseBuilderStep")`** (optional): indicates an alternate path is offered from the step **before** `BaseBuilderStep` in `BaseBuilderName`.
+    - **`BranchFrom("BaseBuilderName", "BaseBuilderStep")`** (optional): indicates an alternate path is offered from the
+      step **before** `BaseBuilderStep` in `BaseBuilderName`.
     - **`CreateBuilderFor<TResult>()`**: defines the final target type being built.
 
 When you compile, the generator inspects these calls and automatically produces:
 
 - **A partial builder class** that implements interfaces representing each step.
 - **A chain of interfaces** (e.g., `IYourClassFirstStep`, `IYourClassSecondStep`, …) to enforce the order of steps.
-- **An optional extension method** if you used `BranchFrom(...)`, allowing you to jump to a new step at the point **before** a specified step in another builder’s chain.
+- **An optional extension method** if you used `BranchFrom(...)`, allowing you to jump to a new step at the point *
+  *before** a specified step in another builder’s chain.
 
 ---
 
@@ -51,7 +55,8 @@ When you build your project, the generator produces `MyClass.g.cs` in the same n
 2. **`IMyClassSecondStep`** with `.SecondStep(string value)`.
 3. **`IMyClassThirdStep`** with `.ThirdStep(bool value)`.
 4. **`IMyClassBuild`** with `.Build(Func<MyClass, MyTargetType> buildFunc)`.
-5. A **partial `MyClass`** that implements all the above interfaces, storing step values in fields like `public int MyIntField;`, `public string SecondStepValue;`, etc.
+5. A **partial `MyClass`** that implements all the above interfaces, storing step values in fields
+   like `public int MyIntField;`, `public string SecondStepValue;`, etc.
 
 ### 2. Using the Generated Builder
 
@@ -102,7 +107,8 @@ public partial class MyOtherClass
 We get:
 
 - A **partial `MyOtherClass`** with steps for `.AlternateStep(...)`.
-- An **extension method** so that **right after** `FirstStep(...)` in `MyClass`, you can **choose** either to go `.SecondStep(...) -> ThirdStep(...) -> Build` **or** `.AlternateStep(...) -> Build`.
+- An **extension method** so that **right after** `FirstStep(...)` in `MyClass`, you can **choose** either to
+  go `.SecondStep(...) -> ThirdStep(...) -> Build` **or** `.AlternateStep(...) -> Build`.
 - Because it’s a **separate path**, once you choose `.AlternateStep(...)`, you **cannot** call `.ThirdStep(...)`.
 
 ---
@@ -115,19 +121,23 @@ The generator handles generic type parameters by including them in the generated
 
 ### 2. What if I have a **branch** in a **generic** class?
 
-If you have a branch (`BranchFrom(...)`), the **branching class** should have a **matching generic signature** (names, constraints, etc.) so the extension methods can properly link the two builders.
+If you have a branch (`BranchFrom(...)`), the **branching class** should have a **matching generic signature** (names,
+constraints, etc.) so the extension methods can properly link the two builders.
 
 ### 3. Can I add custom logic to steps?
 
-Yes. Because the generated class is `partial`, you can add your own partial methods or fields. Steps themselves are automatically generated as chainable methods.
+Yes. Because the generated class is `partial`, you can add your own partial methods or fields. Steps themselves are
+automatically generated as chainable methods.
 
 ### 4. What happens if I omit a step’s `fieldName` parameter?
 
-The generator will default to naming that field as `"{StepName}Value"`. For example, if your step is `.AddStep<int>("Foo")`, the field becomes `public int FooValue;`.
+The generator will default to naming that field as `"{StepName}Value"`. For example, if your step
+is `.AddStep<int>("Foo")`, the field becomes `public int FooValue;`.
 
 ### 5. Should I always write the build logic in `.Build(...)`?
 
-Not necessarily. It’s often beneficial to **keep the `.Build(...)` method minimal** and place common or advanced build logic in **extension methods**. For instance, suppose your generated interface is `IMyClassBuild`; you can do:
+Not necessarily. It’s often beneficial to **keep the `.Build(...)` method minimal** and place common or advanced build
+logic in **extension methods**. For instance, suppose your generated interface is `IMyClassBuild`; you can do:
 
 ```csharp
 public static class MyClassBuilderExtensions
@@ -166,6 +176,7 @@ This keeps your builder usage consistent while consolidating object-creation det
 
 ## Steps Enum
 
-Each generated builder class includes **`enum Steps`** listing all steps (excluding the final `Build`) in the order they were declared. You might use this for logging, debugging, or reflection-based logic if desired.
+Each generated builder class includes **`enum Steps`** listing all steps (excluding the final `Build`) in the order they
+were declared. You might use this for logging, debugging, or reflection-based logic if desired.
 
 ---

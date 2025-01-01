@@ -1,11 +1,13 @@
-using System.Collections.Generic;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using StepwiseBuilderGenerator.HelpersForCache;
 
 namespace StepwiseBuilderGenerator.DTOs;
 
-public record MethodInfo(string MethodName, IEnumerable<string>? GenericArguments, IEnumerable<ArgumentSyntax>? Arguments)
+internal record MethodInfo(
+    string MethodName,
+    EquatableArray<string>? GenericArguments,
+    EquatableArray<string>? Arguments)
 {
     public string MethodName { get; } = MethodName;
-    public IEnumerable<string>? GenericArguments { get; } = GenericArguments;
-    public IEnumerable<ArgumentSyntax>? Arguments { get; } = Arguments;
+    public EquatableArray<string>? GenericArguments { get; } = GenericArguments;
+    public EquatableArray<string>? Arguments { get; } = Arguments;
 }

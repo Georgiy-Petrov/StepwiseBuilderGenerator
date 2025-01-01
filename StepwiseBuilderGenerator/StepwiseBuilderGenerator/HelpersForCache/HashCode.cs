@@ -158,7 +158,9 @@ internal struct HashCode
     }
 
     /// <inheritdoc/>
-    [Obsolete("HashCode is a mutable struct and should not be compared with other HashCodes. Use ToHashCode to retrieve the computed hash code.", error: true)]
+    [Obsolete(
+        "HashCode is a mutable struct and should not be compared with other HashCodes. Use ToHashCode to retrieve the computed hash code.",
+        error: true)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public override int GetHashCode() => throw new NotSupportedException();
 

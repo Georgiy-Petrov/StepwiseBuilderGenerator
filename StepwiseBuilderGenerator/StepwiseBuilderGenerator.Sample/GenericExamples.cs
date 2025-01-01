@@ -6,7 +6,7 @@ namespace StepwiseBuilderGenerator.Sample3
     public interface MockInterface
     {
     }
-    
+
     [StepwiseBuilder]
     public partial class SimpleBuilderSidePathFromFirstStep
     {
@@ -20,7 +20,7 @@ namespace StepwiseBuilderGenerator.Sample3
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     [StepwiseBuilder]
     public partial class SimpleBuilderSidePathFromMiddleStep
     {
@@ -34,7 +34,7 @@ namespace StepwiseBuilderGenerator.Sample3
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     [StepwiseBuilder]
     public partial class SimpleGenericBuilderSidePath<T, T1>
         where T : Exception, IList<T>
@@ -50,7 +50,7 @@ namespace StepwiseBuilderGenerator.Sample3
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     [StepwiseBuilder]
     public partial class GenericBuilderSidePathWithGenerics<T, T1>
         where T : Exception, IList<T>

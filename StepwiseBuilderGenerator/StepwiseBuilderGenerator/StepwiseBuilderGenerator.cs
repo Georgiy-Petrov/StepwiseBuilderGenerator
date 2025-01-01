@@ -97,11 +97,9 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         .Where(static methodInfo => methodInfo.MethodName == "AddStep")
                         .Select(static (methodInfo, i) => new StepInfo(
                             Order: int.Parse(i.ToString()),
-                            StepName: methodInfo.Arguments!.ToList()[0].Expression
-                                .TryCast<LiteralExpressionSyntax>()!.Token.ValueText,
-                            FieldName: methodInfo.Arguments!.ElementAtOrDefault(1)
-                                ?.Expression.TryCast<LiteralExpressionSyntax>()!.Token.ValueText,
-                            ParameterType: methodInfo.GenericArguments!.Single()))
+                            StepName: methodInfo.Arguments!.Value.GetArray()![0],
+                            FieldName: methodInfo.Arguments!.Value.GetArray()!.ElementAtOrDefault(1),
+                            ParameterType: methodInfo.GenericArguments!.Value.GetArray()!.Single()))
                         .OrderBy(static step => step.Order)
                         .ToEquatableArray();
 
@@ -118,16 +116,13 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                 var sidePathForBuilders =
                     invocation
                         .CollectMethodsInChain()
-                        .Reverse()
                         .Where(static mi => mi.MethodName == "BranchFrom")
                         .Select(static mi =>
                         {
                             var builderToExtendName =
-                                mi.Arguments!.ToList()[0]?.Expression.TryCast<LiteralExpressionSyntax>()!.Token
-                                    .ValueText;
+                                mi.Arguments!.Value.GetArray()?[0];
                             var stepName =
-                                mi.Arguments!.ToList()[1]?.Expression.TryCast<LiteralExpressionSyntax>()!.Token
-                                    .ValueText;
+                                mi.Arguments!.Value.GetArray()!.ElementAtOrDefault(1);
 
                             return builderToExtendName is not null
                                 ? new SidePathInfo(builderToExtendName, stepName!)

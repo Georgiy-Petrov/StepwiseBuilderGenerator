@@ -8,19 +8,19 @@ using StepwiseBuilderGenerator.HelpersForCache;
 
 namespace StepwiseBuilderGenerator;
 
-public static class Extensions
+internal static class Extensions
 {
     internal static EquatableArray<T> ToEquatableArray<T>(this IEnumerable<T> collection) where T : IEquatable<T>?
     {
         return new EquatableArray<T>(collection.ToArray());
     }
 
-    public static TResult? TryCast<TResult>(this object @object) where TResult : class
+    internal static TResult? TryCast<TResult>(this object @object) where TResult : class
     {
         return @object as TResult;
     }
 
-    public static IEnumerable<MethodInfo> CollectMethodsInChain(this InvocationExpressionSyntax? invocation)
+    internal static IEnumerable<MethodInfo> CollectMethodsInChain(this InvocationExpressionSyntax? invocation)
     {
         var methodsInfo = new List<MethodInfo>();
 
@@ -33,14 +33,15 @@ public static class Extensions
 
         do
         {
-            var argumentsList = invocation!.ArgumentList.Arguments;
-            
+            var argumentsList = invocation!.ArgumentList.Arguments.Select(static a => a.ToString().Trim('"'))
+                .ToEquatableArray();
+
             memberAccessExpression = invocation.Expression as MemberAccessExpressionSyntax;
             invocation = memberAccessExpression!.Expression as InvocationExpressionSyntax;
 
             var name = memberAccessExpression.Name.Identifier.Text;
             var typeArguments = memberAccessExpression.Name.TryCast<GenericNameSyntax>()?.TypeArgumentList.Arguments
-                .Select(static a => a.ToString());
+                .Select(static a => a.ToString()).ToEquatableArray();
 
             methodsInfo.Add(new MethodInfo(name, typeArguments, argumentsList));
         } while (memberAccessExpression.Expression is InvocationExpressionSyntax);
@@ -48,7 +49,7 @@ public static class Extensions
         return methodsInfo;
     }
 
-    public static TResult? TryFindFirstNode<TResult>(this SyntaxNode node) where TResult : class
+    internal static TResult? TryFindFirstNode<TResult>(this SyntaxNode node) where TResult : class
     {
         // Check if the node is of the type we're looking for
         if (node is TResult result)

@@ -20,7 +20,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\StepwiseBuilderGenerator\StepwiseBuilderGenerator.csproj" />
+        <ProjectReference Include="..\StepwiseBuilderGenerator\StepwiseBuilderGenerator.csproj"/>
     </ItemGroup>
 
 

@@ -6,7 +6,7 @@ namespace StepwiseBuilderGenerator.Sample
     public interface MockInterface
     {
     }
-    
+
     [StepwiseBuilder]
     public partial class SimpleBuilder
     {
@@ -19,18 +19,17 @@ namespace StepwiseBuilderGenerator.Sample
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     //Will not produce builder
     [StepwiseBuilder]
     public partial class SimpleBuilderWithoutNewBuilderDeclaration
     {
         public SimpleBuilderWithoutNewBuilderDeclaration()
         {
-
         }
     }
 
-    
+
     [StepwiseBuilder]
     public partial class SimpleBuilderWithOneStepNameFieldName
     {
@@ -43,7 +42,7 @@ namespace StepwiseBuilderGenerator.Sample
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     [StepwiseBuilder]
     public partial class SimpleBuilderWithSeveralStepNameFieldNames
     {
@@ -56,7 +55,7 @@ namespace StepwiseBuilderGenerator.Sample
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     [StepwiseBuilder]
     public partial class SimpleBuilderWithSeveralStatementsInConstructor
     {
@@ -65,21 +64,21 @@ namespace StepwiseBuilderGenerator.Sample
             new object();
             new object();
             new object();
-            
+
             new GenerateStepwiseBuilder()
                 .AddStep<int>("FirstStep", "First")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
                 .CreateBuilderFor<string>();
-            
+
             new object();
             new object();
             new object();
         }
     }
-    
+
     [StepwiseBuilder]
-    public partial class BuilderWithGenericParameter<T, T1> 
+    public partial class BuilderWithGenericParameter<T, T1>
         where T : Exception, IList<T>
         where T1 : Exception
     {
@@ -92,11 +91,11 @@ namespace StepwiseBuilderGenerator.Sample
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     [StepwiseBuilder]
     public partial class BuilderWithGenericParameters<T1, T2, T3>
-    where T1 : Exception
-    where T2 : MockInterface
+        where T1 : Exception
+        where T2 : MockInterface
     {
         public BuilderWithGenericParameters()
         {
@@ -108,7 +107,7 @@ namespace StepwiseBuilderGenerator.Sample
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     //Will not produce builder
     public partial class SimpleBuilderWithoutAttribute
     {
@@ -121,7 +120,7 @@ namespace StepwiseBuilderGenerator.Sample
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     //Will not produce builder
     [StepwiseBuilder]
     public partial class BuilderWithParametersInConstructor
@@ -134,7 +133,7 @@ namespace StepwiseBuilderGenerator.Sample
                 .AddStep<object>("ThirdStep")
                 .CreateBuilderFor<string>();
         }
-        
+
         public BuilderWithParametersInConstructor(int a1, int a2, int a3)
         {
             new GenerateStepwiseBuilder()
@@ -144,7 +143,7 @@ namespace StepwiseBuilderGenerator.Sample
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     //Will not produce builder
     [StepwiseBuilder]
     public partial class BuilderWithoutCreateBuilderForCall
@@ -157,7 +156,7 @@ namespace StepwiseBuilderGenerator.Sample
                 .AddStep<object>("ThirdStep");
         }
     }
-    
+
     //Will not produce builder
     [StepwiseBuilder]
     public partial class BuilderWithoutAddStepCalls
@@ -168,17 +167,16 @@ namespace StepwiseBuilderGenerator.Sample
                 .CreateBuilderFor<string>();
         }
     }
-    
+
     //Will not produce builder
     [StepwiseBuilder]
     public partial class BuilderWithEmptyConstructor
     {
         public BuilderWithEmptyConstructor()
         {
-
         }
     }
-    
+
     //Produces only first builder declaration
     [StepwiseBuilder]
     public partial class BuilderWithSeveralGenerateDeclarations
@@ -190,7 +188,7 @@ namespace StepwiseBuilderGenerator.Sample
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
                 .CreateBuilderFor<string>();
-            
+
             new GenerateStepwiseBuilder()
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")

@@ -2,7 +2,14 @@ using StepwiseBuilderGenerator.HelpersForCache;
 
 namespace StepwiseBuilderGenerator.DTOs;
 
-internal record BuilderInfo(EquatableArray<string>? Usings, string TargetTypeName, EquatableArray<StepInfo> StepMethods, string ClassName, (string, string) TypeParametersAndConstraints, SidePathInfo? SidePath, string DeclaredNamespace)
+internal record BuilderInfo(
+    EquatableArray<string>? Usings,
+    string TargetTypeName,
+    EquatableArray<StepInfo> StepMethods,
+    string ClassName,
+    (string, string) TypeParametersAndConstraints,
+    SidePathInfo? SidePath,
+    string DeclaredNamespace)
 {
     public string DeclaredNamespace { get; } = DeclaredNamespace;
     public EquatableArray<string>? Usings { get; } = Usings;

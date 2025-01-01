@@ -6,7 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\StepwiseBuilderGenerator\StepwiseBuilderGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" />
+        <ProjectReference Include="..\StepwiseBuilderGenerator\StepwiseBuilderGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true"/>
     </ItemGroup>
 
     <ItemGroup>

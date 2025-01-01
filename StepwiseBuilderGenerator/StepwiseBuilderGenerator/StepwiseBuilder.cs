@@ -17,7 +17,7 @@ public class GenerateStepwiseBuilder
     {
         return this;
     }
-    
+
     public GenerateStepwiseBuilder AddStep<TArgument>(string stepName, string? fieldName = null)
     {
         return this;

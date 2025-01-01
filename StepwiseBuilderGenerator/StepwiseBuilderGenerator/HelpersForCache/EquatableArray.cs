@@ -76,8 +76,8 @@ internal readonly struct EquatableArray<T> : IEquatable<EquatableArray<T>>, IEnu
     IEnumerator<T> IEnumerable<T>.GetEnumerator()
     {
         return ((IEnumerable<T>)(_array ?? Array.Empty<T>())).GetEnumerator();
-    }    
-    
+    }
+
     /// <sinheritdoc/>
     IEnumerator IEnumerable.GetEnumerator()
     {
