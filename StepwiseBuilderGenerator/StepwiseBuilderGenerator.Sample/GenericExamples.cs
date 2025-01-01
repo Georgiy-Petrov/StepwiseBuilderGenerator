@@ -3,14 +3,22 @@ using System.Collections.Generic;
 
 namespace StepwiseBuilderGenerator.Sample3
 {
+    /// <summary>
+    /// A mock interface used by some of our generic constraints.
+    /// </summary>
     public interface MockInterface
     {
     }
 
+    /// <summary>
+    /// A side path branching from the 'FirstStep' of a base builder named 'SimpleBuilder'.
+    /// Once 'SimpleBuilder' completes 'FirstStep', the user can jump here instead of proceeding
+    /// with its own second step. This path has three new steps of its own.
+    /// </summary>
     [StepwiseBuilder]
-    public partial class SimpleBuilderSidePathFromFirstStep
+    public partial class SidePathFromFirstStepBuilder
     {
-        public SimpleBuilderSidePathFromFirstStep()
+        public SidePathFromFirstStepBuilder()
         {
             new GenerateStepwiseBuilder()
                 .BranchFrom("SimpleBuilder", "FirstStep")
@@ -21,10 +29,14 @@ namespace StepwiseBuilderGenerator.Sample3
         }
     }
 
+    /// <summary>
+    /// A side path branching from 'SimpleBuilder' BEFORE 'SecondStep'. So after 'SimpleBuilder'
+    /// completes 'FirstStep', the user can switch to this path (FirstStep -> SecondStep -> ThirdStep).
+    /// </summary>
     [StepwiseBuilder]
-    public partial class SimpleBuilderSidePathFromMiddleStep
+    public partial class SidePathFromMiddleStepBuilder
     {
-        public SimpleBuilderSidePathFromMiddleStep()
+        public SidePathFromMiddleStepBuilder()
         {
             new GenerateStepwiseBuilder()
                 .BranchFrom("SimpleBuilder", "SecondStep")
@@ -35,15 +47,20 @@ namespace StepwiseBuilderGenerator.Sample3
         }
     }
 
+    /// <summary>
+    /// Shows a side path from a generic base builder 'BuilderWithGenericParameter',
+    /// branching BEFORE the 'SecondStep'. This new builder has its own steps 
+    /// (no generics used here).
+    /// </summary>
     [StepwiseBuilder]
-    public partial class SimpleGenericBuilderSidePath<T, T1>
-        where T : Exception, IList<T>
-        where T1 : Exception
+    public partial class GenericBaseSidePathBuilder<T1, T2, T3>
+        where T1 : Exception, IList<T1>
+        where T2 : Sample.MockInterface
     {
-        public SimpleGenericBuilderSidePath()
+        public GenericBaseSidePathBuilder()
         {
             new GenerateStepwiseBuilder()
-                .BranchFrom("BuilderWithGenericParameter", "SecondStep")
+                .BranchFrom("MultiGenericParameterBuilder", "SecondStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -51,17 +68,61 @@ namespace StepwiseBuilderGenerator.Sample3
         }
     }
 
+    /// <summary>
+    /// Demonstrates a side path from the same generic base builder ('BuilderWithGenericParameter'),
+    /// but here the side path steps also use generics (T, T1). Ensures the extension 
+    /// method and the side path builder share compatible type parameters.
+    /// </summary>
     [StepwiseBuilder]
-    public partial class GenericBuilderSidePathWithGenerics<T, T1>
-        where T : Exception, IList<T>
+    public partial class GenericSidePathWithGenericSteps<T1, T2, T3>
         where T1 : Exception
+        where T2 : Sample.MockInterface
     {
-        public GenericBuilderSidePathWithGenerics()
+        public GenericSidePathWithGenericSteps()
         {
             new GenerateStepwiseBuilder()
-                .BranchFrom("BuilderWithGenericParameter", "SecondStep")
-                .AddStep<T>("FirstStep")
-                .AddStep<T1>("SecondStep")
+                .BranchFrom("MultiGenericParameterBuilder", "SecondStep")
+                // Use T, T1 as the step types
+                .AddStep<T1>("FirstStep")
+                .AddStep<T2>("SecondStep")
+                .AddStep<object>("ThirdStep")
+                .CreateBuilderFor<string>();
+        }
+    }
+
+    /// <summary>
+    /// 1) BranchFrom the *last* step in 'SimpleBuilder' (which is 'ThirdStep' if that is indeed its final step).
+    ///    In many generators, branching from the last step doesn't make much sense, since there's 
+    ///    no subsequent step to override. The generator might ignore it or produce limited utility.
+    /// 2) The new path has one step called 'AlternateStep'.
+    /// </summary>
+    [StepwiseBuilder]
+    public partial class BranchFromLastStepBuilder
+    {
+        public BranchFromLastStepBuilder()
+        {
+            new GenerateStepwiseBuilder()
+                .BranchFrom("SimpleBuilder", "ThirdStep")
+                .AddStep<int>("AlternateStep")
+                .CreateBuilderFor<string>();
+        }
+    }
+
+    /// <summary>
+    /// Demonstrates a side path that reuses the *same step name* as the base builder's pivot step.
+    /// E.g., BranchFrom 'SecondStep' and then define the first step in this path 
+    /// also as 'SecondStep'. This might be confusing or cause collisions depending 
+    /// on how the generator implements extension methods and step interfaces.
+    /// </summary>
+    [StepwiseBuilder]
+    public partial class SidePathWithDuplicateStepName
+    {
+        public SidePathWithDuplicateStepName()
+        {
+            new GenerateStepwiseBuilder()
+                .BranchFrom("SimpleBuilder", "SecondStep")
+                // Reusing the same step name 'SecondStep' right after branching
+                .AddStep<int>("SecondStep")
                 .AddStep<object>("ThirdStep")
                 .CreateBuilderFor<string>();
         }
