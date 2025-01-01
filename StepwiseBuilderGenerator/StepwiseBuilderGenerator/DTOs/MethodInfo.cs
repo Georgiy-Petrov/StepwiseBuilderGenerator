@@ -3,9 +3,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace StepwiseBuilderGenerator.DTOs;
 
-public record MethodInfo(string MethodName, IEnumerable<string>? TypeArguments, IEnumerable<ArgumentSyntax>? ArgumentList)
+public record MethodInfo(string MethodName, IEnumerable<string>? GenericArguments, IEnumerable<ArgumentSyntax>? Arguments)
 {
     public string MethodName { get; } = MethodName;
-    public IEnumerable<string>? TypeArguments { get; } = TypeArguments;
-    public IEnumerable<ArgumentSyntax>? ArgumentList { get; } = ArgumentList;
+    public IEnumerable<string>? GenericArguments { get; } = GenericArguments;
+    public IEnumerable<ArgumentSyntax>? Arguments { get; } = Arguments;
 }

@@ -2,9 +2,9 @@ using StepwiseBuilderGenerator.HelpersForCache;
 
 namespace StepwiseBuilderGenerator.DTOs;
 
-internal record ExtendedBuilderInfo(string Namespace, string Name, EquatableArray<string>? Usings)
+internal record ExtendedBuilderInfo(string DeclaredNamespace, string ClassName, EquatableArray<string>? Usings)
 {
-    public string Namespace { get; } = Namespace;
-    public string Name { get; } = Name;
+    public string DeclaredNamespace { get; } = DeclaredNamespace;
+    public string ClassName { get; } = ClassName;
     public EquatableArray<string>? Usings { get; } = Usings;
 }

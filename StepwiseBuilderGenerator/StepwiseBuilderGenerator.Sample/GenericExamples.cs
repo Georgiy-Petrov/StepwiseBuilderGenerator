@@ -13,7 +13,7 @@ namespace StepwiseBuilderGenerator.Sample3
         public SimpleBuilderSidePathFromFirstStep()
         {
             new GenerateStepwiseBuilder()
-                .SidePathFrom("SimpleBuilder", "FirstStep")
+                .BranchFrom("SimpleBuilder", "FirstStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -27,7 +27,7 @@ namespace StepwiseBuilderGenerator.Sample3
         public SimpleBuilderSidePathFromMiddleStep()
         {
             new GenerateStepwiseBuilder()
-                .SidePathFrom("SimpleBuilder", "SecondStep")
+                .BranchFrom("SimpleBuilder", "SecondStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -43,7 +43,7 @@ namespace StepwiseBuilderGenerator.Sample3
         public SimpleGenericBuilderSidePath()
         {
             new GenerateStepwiseBuilder()
-                .SidePathFrom("BuilderWithGenericParameter", "SecondStep")
+                .BranchFrom("BuilderWithGenericParameter", "SecondStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -59,7 +59,7 @@ namespace StepwiseBuilderGenerator.Sample3
         public GenericBuilderSidePathWithGenerics()
         {
             new GenerateStepwiseBuilder()
-                .SidePathFrom("BuilderWithGenericParameter", "SecondStep")
+                .BranchFrom("BuilderWithGenericParameter", "SecondStep")
                 .AddStep<T>("FirstStep")
                 .AddStep<T1>("SecondStep")
                 .AddStep<object>("ThirdStep")

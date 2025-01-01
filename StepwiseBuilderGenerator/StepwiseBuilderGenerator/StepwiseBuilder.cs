@@ -5,14 +5,15 @@ namespace StepwiseBuilderGenerator;
 [AttributeUsage(AttributeTargets.Class)]
 public class StepwiseBuilder : Attribute
 {
-    public StepwiseBuilder(bool buildersWithFullyQualifiedNames = false)
+    // TODO: bool buildersWithFullyQualifiedNames = false
+    public StepwiseBuilder()
     {
     }
 }
 
 public class GenerateStepwiseBuilder
 {
-    public GenerateStepwiseBuilder SidePathFrom(string builderName, string stepName)
+    public GenerateStepwiseBuilder BranchFrom(string builderName, string stepName)
     {
         return this;
     }

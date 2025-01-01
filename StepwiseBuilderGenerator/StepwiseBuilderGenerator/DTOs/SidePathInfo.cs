@@ -1,7 +1,7 @@
 namespace StepwiseBuilderGenerator.DTOs;
 
-record SidePathInfo(string BuilderToExtendName, string StepToExtendName)
+record SidePathInfo(string BaseBuilderName, string BaseBuilderStep)
 {
-    public string BuilderToExtendName { get; } = BuilderToExtendName;
-    public string StepToExtendName { get; } = StepToExtendName;
+    public string BaseBuilderName { get; } = BaseBuilderName;
+    public string BaseBuilderStep { get; } = BaseBuilderStep;
 }
