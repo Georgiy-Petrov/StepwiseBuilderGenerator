@@ -5,7 +5,6 @@ namespace StepwiseBuilderGenerator;
 [AttributeUsage(AttributeTargets.Class)]
 public class StepwiseBuilder : Attribute
 {
-    // TODO: bool buildersWithFullyQualifiedNames = false
     public StepwiseBuilder()
     {
     }
