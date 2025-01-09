@@ -9,8 +9,4 @@
         <ProjectReference Include="..\StepwiseBuilderGenerator\StepwiseBuilderGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true"/>
     </ItemGroup>
 
-    <ItemGroup>
-        <None Remove="DDD.UbiquitousLanguageRegistry.txt"/>
-    </ItemGroup>
-
 </Project>
