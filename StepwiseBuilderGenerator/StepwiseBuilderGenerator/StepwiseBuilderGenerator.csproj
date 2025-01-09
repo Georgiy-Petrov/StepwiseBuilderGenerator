@@ -19,7 +19,6 @@
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <PackageTags>Fluent, Generator, Builder</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -32,14 +31,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Update="Properties\helmet.png">
+        <None Include="Properties\helmet.png">
             <Pack>True</Pack>
             <PackagePath></PackagePath>
         </None>
 
         <None Include="..\..\Readme.md" Pack="true" PackagePath="\"/>
-
-        <None Include="..\..\LICENSE.txt" Pack="true" PackagePath=""/>
     </ItemGroup>
 
 
