@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework>netstandard2.0</TargetFramework>
-        <IsPackable>false</IsPackable>
+        <IsPackable>true</IsPackable>
         <Nullable>enable</Nullable>
         <LangVersion>latest</LangVersion>
 
@@ -10,6 +10,16 @@
         <IsRoslynComponent>true</IsRoslynComponent>
         <PackageId>StepwiseBuilderGenerator</PackageId>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>StepwiseBuilderGenerator</Title>
+        <Authors/>
+        <Description>This package provides a Source Generator that creates strongly-typed, stepwise “fluent” builders for your types. You simply annotate a class with [StepwiseBuilder] and specify the steps you need in the class’s parameterless constructor. The source generator then produces a partial class containing builder interfaces and step methods.</Description>
+        <RepositoryUrl>https://github.com/Georgiy-Petrov/StepwiseBuilderGenerator</RepositoryUrl>
+        <PackageIcon>helmet.png</PackageIcon>
+        <PackageReadmeFile>Readme.md</PackageReadmeFile>
+        <PackageTags>Fluent, Generator, Builder</PackageTags>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     </PropertyGroup>
 
     <ItemGroup>
@@ -19,6 +29,17 @@
         </PackageReference>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.3.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="Properties\helmet.png">
+            <Pack>True</Pack>
+            <PackagePath></PackagePath>
+        </None>
+
+        <None Include="..\..\Readme.md" Pack="true" PackagePath="\"/>
+
+        <None Include="..\..\LICENSE.txt" Pack="true" PackagePath=""/>
     </ItemGroup>
 
 
