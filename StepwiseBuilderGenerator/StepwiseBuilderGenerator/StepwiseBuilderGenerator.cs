@@ -104,7 +104,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         .ToEquatableArray();
 
                 // Retrieve the class declaration and its info (namespace, name, constraints, etc.)
-                var classDeclaration = GetClassDeclaration(invocation);
+                var classDeclaration = syntaxContext.TargetNode
+                    .TryCast<ClassDeclarationSyntax>();
                 var className = classDeclaration!.Identifier.ToString();
                 var classTypeParametersAndConstraints =
                 (
@@ -130,7 +131,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         })
                         .SingleOrDefault();
 
-                var builderNamespace = GetNamespace(classDeclaration);
+                var builderNamespace = syntaxContext.TargetSymbol.ContainingNamespace.ConstituentNamespaces
+                    .SingleOrDefault()?.ToString();
 
                 // Build and return the info needed to generate code
                 return new BuilderInfo(
@@ -193,8 +195,10 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     ?.TryCast<ExpressionStatementSyntax>()?.Expression
                     .TryCast<InvocationExpressionSyntax>();
 
-                var classDeclaration = GetClassDeclaration(invocation);
-                var builderNamespace = GetNamespace(classDeclaration!);
+                var classDeclaration = syntaxContext.TargetNode
+                    .TryCast<ClassDeclarationSyntax>();
+                var builderNamespace = syntaxContext.TargetSymbol.ContainingNamespace.ConstituentNamespaces
+                    .SingleOrDefault()?.ToString();
 
                 // Gather 'using' statements to ensure consistent imports if we extend from this builder
                 var usings =
@@ -230,68 +234,6 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             builderInfoProvider.Combine(extendedBuilderInfoProvider.Collect()),
             GenerateSourceForStepwiseBuilders
         );
-    }
-
-
-    private static ClassDeclarationSyntax? GetClassDeclaration(InvocationExpressionSyntax? invocation)
-    {
-        if (invocation is null)
-        {
-            return null;
-        }
-
-        var parent = invocation.Parent;
-
-        while (parent is not ClassDeclarationSyntax)
-        {
-            parent = parent?.Parent;
-        }
-
-        return (ClassDeclarationSyntax)parent;
-    }
-
-    private static string GetNamespace(ClassDeclarationSyntax syntax)
-    {
-        // If we don't have a namespace at all we'll return an empty string
-        // This accounts for the "default namespace" case
-        string nameSpace = string.Empty;
-
-        // Get the containing syntax node for the type declaration
-        // (could be a nested type, for example)
-        SyntaxNode? potentialNamespaceParent = syntax.Parent;
-
-        // Keep moving "out" of nested classes etc until we get to a namespace
-        // or until we run out of parents
-        while (potentialNamespaceParent != null &&
-               potentialNamespaceParent is not NamespaceDeclarationSyntax
-               && potentialNamespaceParent is not FileScopedNamespaceDeclarationSyntax)
-        {
-            potentialNamespaceParent = potentialNamespaceParent.Parent;
-        }
-
-        // Build up the final namespace by looping until we no longer have a namespace declaration
-        if (potentialNamespaceParent is BaseNamespaceDeclarationSyntax namespaceParent)
-        {
-            // We have a namespace. Use that as the type
-            nameSpace = namespaceParent.Name.ToString();
-
-            // Keep moving "out" of the namespace declarations until we 
-            // run out of nested namespace declarations
-            while (true)
-            {
-                if (namespaceParent.Parent is not NamespaceDeclarationSyntax parent)
-                {
-                    break;
-                }
-
-                // Add the outer namespace as a prefix to the final namespace
-                nameSpace = $"{namespaceParent.Name}.{nameSpace}";
-                namespaceParent = parent;
-            }
-        }
-
-        // return the final namespace
-        return nameSpace;
     }
 
     private static void GenerateSourceForStepwiseBuilders(
@@ -452,14 +394,14 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         sourceBuilder.Append($$"""
                                    }
                                }
-                               
+
                                """);
 
         // 9) If this is base builder, Generate factory method for each non-Branch builder
         if (builderToExtendName is null && stepsArray.FirstOrDefault() is not null)
-        { 
+        {
             var returnType = interfaceNames[0];
-            
+
             sourceBuilder.Append($$"""
                                    public static partial class StepwiseBuilders
                                    {
