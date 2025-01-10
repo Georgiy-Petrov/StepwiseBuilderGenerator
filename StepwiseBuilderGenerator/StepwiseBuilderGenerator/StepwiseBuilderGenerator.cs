@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using StepwiseBuilderGenerator.DTOs;
 using StepwiseBuilderGenerator.HelpersForCache;
@@ -69,18 +70,9 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     .TryCast<ExpressionStatementSyntax>()!.Expression
                     .TryCast<InvocationExpressionSyntax>();
 
-                // Gather relevant 'using' statements from ancestor nodes
+                // Gather relevant 'using' statements
                 var usings =
-                    invocation?.Ancestors()
-                        .Select(static ancestor =>
-                            ancestor.TryCast<BaseNamespaceDeclarationSyntax>()?.Usings ??
-                            ancestor.TryCast<CompilationUnitSyntax>()?.Usings)
-                        .Where(static u => u is not null)
-                        .SelectMany(static list => list!.Value)
-                        .OrderBy(static syntax => syntax.Name.ToString().Length)
-                        .Select(static u => u.ToString())
-                        .Prepend("using System;")
-                        .Distinct()
+                    syntaxContext.SemanticModel.SyntaxTree.GetCompilationUnitRoot().Usings.Select(u => u.ToString())
                         .ToEquatableArray();
 
                 // Extract the target type from CreateBuilderFor<T>()
@@ -185,33 +177,14 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             // Transform: build a simple ExtendedBuilderInfo record
             static (syntaxContext, _) =>
             {
-                var invocation = syntaxContext.TargetNode
-                    .TryCast<ClassDeclarationSyntax>()?.Members
-                    .FirstOrDefault(member => member is ConstructorDeclarationSyntax)?
-                    .TryCast<ConstructorDeclarationSyntax>()?.Body?.Statements.FirstOrDefault(static statement =>
-                        statement.TryCast<ExpressionStatementSyntax>()?.Expression
-                            .TryCast<InvocationExpressionSyntax>()?.Expression
-                            .TryCast<MemberAccessExpressionSyntax>()?.Name.Identifier.Text == "CreateBuilderFor")
-                    ?.TryCast<ExpressionStatementSyntax>()?.Expression
-                    .TryCast<InvocationExpressionSyntax>();
-
                 var classDeclaration = syntaxContext.TargetNode
                     .TryCast<ClassDeclarationSyntax>();
+
                 var builderNamespace = syntaxContext.TargetSymbol.ContainingNamespace.ConstituentNamespaces
                     .SingleOrDefault()?.ToString();
-
-                // Gather 'using' statements to ensure consistent imports if we extend from this builder
+                
                 var usings =
-                    invocation?.Ancestors()
-                        .Select(static ancestor =>
-                            ancestor.TryCast<BaseNamespaceDeclarationSyntax>()?.Usings ??
-                            ancestor.TryCast<CompilationUnitSyntax>()?.Usings)
-                        .Where(static u => u is not null)
-                        .SelectMany(static list => list!.Value)
-                        .OrderBy(static syntax => syntax.Name.ToString().Length)
-                        .Select(static u => u.ToString())
-                        .Prepend("using System;")
-                        .Distinct()
+                    syntaxContext.SemanticModel.SyntaxTree.GetCompilationUnitRoot().Usings.Select(u => u.ToString())
                         .ToEquatableArray();
 
                 // Construct the ExtendedBuilderInfo
