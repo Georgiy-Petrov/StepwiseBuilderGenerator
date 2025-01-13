@@ -88,7 +88,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         .Reverse() // ensure we process them in source order
                         .Where(static methodInfo => methodInfo.MethodName == "AddStep")
                         .Select(static (methodInfo, i) => new StepInfo(
-                            Order: int.Parse(i.ToString()),
+                            Order: i,
                             StepName: methodInfo.Arguments!.Value.GetArray()![0],
                             FieldName: methodInfo.Arguments!.Value.GetArray()!.ElementAtOrDefault(1),
                             ParameterType: methodInfo.GenericArguments!.Value.GetArray()!.Single()))
