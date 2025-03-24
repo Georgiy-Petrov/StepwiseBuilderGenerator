@@ -182,7 +182,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
                 var builderNamespace = syntaxContext.TargetSymbol.ContainingNamespace.ConstituentNamespaces
                     .SingleOrDefault()?.ToString();
-                
+
                 var usings =
                     syntaxContext.SemanticModel.SyntaxTree.GetCompilationUnitRoot().Usings.Select(u => u.ToString())
                         .ToEquatableArray();
@@ -220,14 +220,16 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         var builderToExtendName = builderInfo.SidePath?.BaseBuilderName;
 
         // Start with the usings from the original info
-        var finalUsings = builderInfo.Usings;
+        var finalUsings = (builderInfo.Usings ?? Array.Empty<string>().ToEquatableArray()).Prepend("using System;")
+            .Distinct();
 
         // If there's a matching extended builder, append its namespace and unify with existing usings
         if (extendedBuilderInfos.FirstOrDefault(e => e?.ClassName == builderToExtendName) is { } matchingExtension)
         {
             finalUsings = finalUsings
                 .Append($"using {matchingExtension.DeclaredNamespace};")
-                .Union(matchingExtension.Usings ?? Array.Empty<string>().ToEquatableArray())
+                .Union(matchingExtension.Usings!)
+                .Distinct()
                 .ToEquatableArray();
         }
 
@@ -255,10 +257,11 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
         // 1) Write out all the using statements and namespace
         sourceBuilder.Append($$"""
-                               {{string.Join("\n", finalUsings ?? new EquatableArray<string>())}}
+                               {{string.Join("\n", finalUsings)}}
 
                                namespace {{namespaceName}};
-
+                               
+                               
                                """);
 
         // We'll reference the steps more than once, so let's store them as an array
