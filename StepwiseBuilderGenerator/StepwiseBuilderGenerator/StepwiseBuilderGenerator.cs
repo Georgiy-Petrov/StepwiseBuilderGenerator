@@ -178,8 +178,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                 var classDeclaration = syntaxContext.TargetNode
                     .TryCast<ClassDeclarationSyntax>();
 
-                var builderNamespace = syntaxContext.TargetSymbol.ContainingNamespace.ConstituentNamespaces
-                    .SingleOrDefault()?.ToString();
+                var builderNamespace = syntaxContext.TargetSymbol.ContainingNamespace.ToString();
 
                 var usings =
                     syntaxContext.SemanticModel.SyntaxTree.GetCompilationUnitRoot().Usings.Select(u => u.ToString())
