@@ -7,7 +7,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using StepwiseBuilderGenerator.DTOs;
-using StepwiseBuilderGenerator.HelpersForCache;
 
 namespace StepwiseBuilderGenerator;
 
@@ -123,8 +122,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         })
                         .SingleOrDefault();
 
-                var builderNamespace = syntaxContext.TargetSymbol.ContainingNamespace.ConstituentNamespaces
-                    .SingleOrDefault()?.ToString();
+                var builderNamespace = syntaxContext.TargetSymbol.ContainingNamespace.ToString();
 
                 // Build and return the info needed to generate code
                 return new BuilderInfo(
@@ -236,7 +234,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         // Pull out the main elements
         var targetType = builderInfo.TargetTypeName;
         var steps = builderInfo.StepMethods;
-        var namespaceName = builderInfo.DeclaredNamespace;
+        var @namespace = builderInfo.DeclaredNamespace == "<global namespace>" ? "" : $"namespace {builderInfo.DeclaredNamespace};";
         var (typeParams, constraints) = builderInfo.TypeParametersAndConstraints;
         var className = builderInfo.ClassName;
 
@@ -259,7 +257,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         sourceBuilder.Append($$"""
                                {{string.Join("\n", finalUsings)}}
 
-                               namespace {{namespaceName}};
+                               {{@namespace}}
                                
                                
                                """);

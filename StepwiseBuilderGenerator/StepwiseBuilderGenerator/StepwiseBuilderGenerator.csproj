@@ -19,7 +19,7 @@
         <PackageReadmeFile>Readme.md</PackageReadmeFile>
         <PackageTags>Fluent, Generator, Builder</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <Version>1.0.4</Version>
+        <Version>1.0.5</Version>
     </PropertyGroup>
 
     <ItemGroup>
