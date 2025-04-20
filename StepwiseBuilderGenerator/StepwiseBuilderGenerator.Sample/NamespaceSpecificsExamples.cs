@@ -22,7 +22,7 @@ namespace StepwiseBuilderGenerator.NestedExample
                 {
                     public BuilderInsideNestedNamespace()
                     {
-                        new GenerateStepwiseBuilder()
+                        GenerateStepwiseBuilder
                             .AddStep<string>("SomeStep")
                             .CreateBuilderFor<ChannelOptions>();
                     }
@@ -39,7 +39,7 @@ namespace StepwiseBuilderGenerator.SampleCustomNamespace
     {
         public BuilderWithoutDeclaredSystemUsing()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<string>("SomeStep")
                 .CreateBuilderFor<string>();
         }
@@ -51,7 +51,7 @@ public partial class BuilderInsideGlobalNamespace
 {
     public BuilderInsideGlobalNamespace()
     {
-        new GenerateStepwiseBuilder()
+        GenerateStepwiseBuilder
             .AddStep<string>("SomeStep")
             .CreateBuilderFor<string>();
     }
@@ -62,7 +62,7 @@ public partial class BuilderInsideGlobalNamespaceWithExternalNamespaceDependency
 {
     public BuilderInsideGlobalNamespaceWithExternalNamespaceDependency()
     {
-        new GenerateStepwiseBuilder()
+        GenerateStepwiseBuilder
             .AddStep<string>("SomeStep")
             .CreateBuilderFor<BuilderWithoutDeclaredSystemUsing>();
     }

@@ -13,7 +13,7 @@ namespace StepwiseBuilderGenerator.Sample
     {
         public BasicThreeStepBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -42,7 +42,7 @@ namespace StepwiseBuilderGenerator.Sample
     {
         public OneCustomFieldNameBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep", "First")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -59,7 +59,7 @@ namespace StepwiseBuilderGenerator.Sample
     {
         public SeveralCustomFieldNamesBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep", "First")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep", "Fourth")
@@ -82,7 +82,7 @@ namespace StepwiseBuilderGenerator.Sample
             new object();
 
             // Valid builder chain
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep", "First")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -106,7 +106,7 @@ namespace StepwiseBuilderGenerator.Sample
     {
         public GenericParameterBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<T>("FirstStep", "First")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -125,7 +125,7 @@ namespace StepwiseBuilderGenerator.Sample
     {
         public MultiGenericParameterBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<T1>("FirstStep", "First")
                 .AddStep<T2>("SecondStep")
                 .AddStep<T3>("ThirdStep")
@@ -142,7 +142,7 @@ namespace StepwiseBuilderGenerator.Sample
     {
         public NoAttributeBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -159,7 +159,7 @@ namespace StepwiseBuilderGenerator.Sample
     {
         public ConstructorsWithParametersBuilder(int a1)
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -168,7 +168,7 @@ namespace StepwiseBuilderGenerator.Sample
 
         public ConstructorsWithParametersBuilder(int a1, int a2, int a3)
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -185,25 +185,10 @@ namespace StepwiseBuilderGenerator.Sample
     {
         public NoCreateBuilderForCallBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep");
-        }
-    }
-
-    /// <summary>
-    /// Has [StepwiseBuilder], calls GenerateStepwiseBuilder(), 
-    /// but has NO .AddStep(...) calls before .CreateBuilderFor<T>(). 
-    /// Will not produce a builder since it has zero steps.
-    /// </summary>
-    [StepwiseBuilder]
-    public partial class NoAddStepCallsBuilder
-    {
-        public NoAddStepCallsBuilder()
-        {
-            new GenerateStepwiseBuilder()
-                .CreateBuilderFor<string>();
         }
     }
 
@@ -230,14 +215,14 @@ namespace StepwiseBuilderGenerator.Sample
         public MultipleGenerateCallsBuilder()
         {
             // First builder call
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
                 .CreateBuilderFor<string>();
 
             // Second builder call - typically ignored by the generator
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -256,7 +241,7 @@ namespace StepwiseBuilderGenerator.Sample
         // This constructor meets the generator's discovery pattern
         public ParameterizedAndParameterlessBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep", "First")
                 .AddStep<string>("SecondStep")
                 .CreateBuilderFor<string>();
@@ -265,7 +250,7 @@ namespace StepwiseBuilderGenerator.Sample
         // The generator ignores this one because it is not parameterless
         public ParameterizedAndParameterlessBuilder(int x, string y)
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("ParamFirstStep", "FirstParam")
                 .AddStep<string>("ParamSecondStep")
                 .CreateBuilderFor<string>();
@@ -288,7 +273,7 @@ namespace StepwiseBuilderGenerator.Sample
     {
         public SimpleBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .AddStep<int>("FirstStep", "FirstStepValue")
                 .AddStep<int>("SecondStep", "SecondStepValue")
                 .AddStep<object>("ThirdStep", "ThirdStepValue")

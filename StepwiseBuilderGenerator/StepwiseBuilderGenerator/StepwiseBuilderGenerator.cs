@@ -37,10 +37,10 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     )
                     ?.TryCast<ConstructorDeclarationSyntax>()?.Body?.Statements;
 
-                // Check if there's a statement that calls 'GenerateStepwiseBuilder()'
+                // Check if there's a statement that calls 'GenerateStepwiseBuilder'
                 var generateBuilderStatementCall = statements?.FirstOrDefault(statement =>
-                    statement.TryFindFirstNode<ObjectCreationExpressionSyntax>()?
-                        .Type.TryCast<IdentifierNameSyntax>()?.Identifier.Text == "GenerateStepwiseBuilder");
+                    statement.TryFindFirstNode<IdentifierNameSyntax>(identifier =>
+                        identifier.Identifier.Text == "GenerateStepwiseBuilder") is not null);
 
                 // Verify the call to 'CreateBuilderFor(...)' is present
                 var createBuilderForCallPresence =
@@ -156,8 +156,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     ?.TryCast<ConstructorDeclarationSyntax>()?.Body?.Statements;
 
                 var generateBuilderStatementCall = statements?.FirstOrDefault(statement =>
-                    statement.TryFindFirstNode<ObjectCreationExpressionSyntax>()?
-                        .Type.TryCast<IdentifierNameSyntax>()?.Identifier.Text == "GenerateStepwiseBuilder");
+                    statement.TryFindFirstNode<IdentifierNameSyntax>(identifier =>
+                        identifier.Identifier.Text == "GenerateStepwiseBuilder") is not null);
 
                 var createBuilderForCallPresence =
                     generateBuilderStatementCall?
@@ -233,7 +233,9 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         // Pull out the main elements
         var targetType = builderInfo.TargetTypeName;
         var steps = builderInfo.StepMethods;
-        var @namespace = builderInfo.DeclaredNamespace == "<global namespace>" ? "" : $"namespace {builderInfo.DeclaredNamespace};";
+        var @namespace = builderInfo.DeclaredNamespace == "<global namespace>"
+            ? ""
+            : $"namespace {builderInfo.DeclaredNamespace};";
         var (typeParams, constraints) = builderInfo.TypeParametersAndConstraints;
         var className = builderInfo.ClassName;
 
@@ -257,8 +259,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                {{string.Join("\n", finalUsings)}}
 
                                {{@namespace}}
-                               
-                               
+
+
                                """);
 
         // We'll reference the steps more than once, so let's store them as an array

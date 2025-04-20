@@ -20,7 +20,7 @@ namespace StepwiseBuilderGenerator.Sample3
     {
         public SidePathFromFirstStepBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .BranchFrom("SimpleBuilder", "FirstStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
@@ -38,7 +38,7 @@ namespace StepwiseBuilderGenerator.Sample3
     {
         public SidePathFromMiddleStepBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .BranchFrom("SimpleBuilder", "SecondStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
@@ -59,7 +59,7 @@ namespace StepwiseBuilderGenerator.Sample3
     {
         public GenericBaseSidePathBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .BranchFrom("MultiGenericParameterBuilder", "SecondStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
@@ -80,7 +80,7 @@ namespace StepwiseBuilderGenerator.Sample3
     {
         public GenericSidePathWithGenericSteps()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .BranchFrom("MultiGenericParameterBuilder", "SecondStep")
                 // Use T, T1 as the step types
                 .AddStep<T1>("FirstStep")
@@ -101,7 +101,7 @@ namespace StepwiseBuilderGenerator.Sample3
     {
         public BranchFromLastStepBuilder()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .BranchFrom("SimpleBuilder", "ThirdStep")
                 .AddStep<int>("AlternateStep")
                 .CreateBuilderFor<string>();
@@ -119,7 +119,7 @@ namespace StepwiseBuilderGenerator.Sample3
     {
         public SidePathWithDuplicateStepName()
         {
-            new GenerateStepwiseBuilder()
+            GenerateStepwiseBuilder
                 .BranchFrom("SimpleBuilder", "SecondStep")
                 // Reusing the same step name 'SecondStep' right after branching
                 .AddStep<int>("SecondStep")

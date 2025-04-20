@@ -49,18 +49,21 @@ internal static class Extensions
         return methodsInfo;
     }
 
-    internal static TResult? TryFindFirstNode<TResult>(this SyntaxNode node) where TResult : class
+    internal static TResult? TryFindFirstNode<TResult>(this SyntaxNode node, Func<TResult, bool> filter) where TResult : class
     {
         // Check if the node is of the type we're looking for
         if (node is TResult result)
         {
-            return result; // Stop traversal here if this is the target
+            if (filter(result))
+            {
+                return result; // Stop traversal here if this is the target
+            }
         }
 
         // Recursively traverse each child node
         foreach (var child in node.ChildNodes())
         {
-            return TryFindFirstNode<TResult>(child); // Recursive call for each child node
+            return TryFindFirstNode<TResult>(child, filter); // Recursive call for each child node
         }
 
         return null;
