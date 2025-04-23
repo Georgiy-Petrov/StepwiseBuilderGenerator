@@ -9,7 +9,8 @@ internal record BuilderInfo(
     string ClassName,
     (string, string) TypeParametersAndConstraints,
     SidePathInfo? SidePath,
-    string DeclaredNamespace)
+    string DeclaredNamespace, 
+    (string, string)? CreateBuilderForDefaultValueFactoryInfo)
 {
     public string DeclaredNamespace { get; } = DeclaredNamespace;
     public EquatableArray<string>? Usings { get; } = Usings;
@@ -18,4 +19,6 @@ internal record BuilderInfo(
     public string ClassName { get; } = ClassName;
     public (string, string) TypeParametersAndConstraints { get; } = TypeParametersAndConstraints;
     public SidePathInfo? SidePath { get; } = SidePath;
+    
+    public (string, string)? CreateBuilderForDefaultValueFactoryInfo { get; } = CreateBuilderForDefaultValueFactoryInfo;
 }

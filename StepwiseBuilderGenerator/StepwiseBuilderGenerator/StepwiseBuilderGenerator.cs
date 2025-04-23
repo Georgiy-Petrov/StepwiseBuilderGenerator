@@ -81,7 +81,28 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                 var targetType =
                     invocation?.Expression
                         .TryCast<MemberAccessExpressionSyntax>()!.Name
+                        .TryCast<GenericNameSyntax>()!.TypeArgumentList.Arguments.Count == 1
+                        ? invocation?.Expression
+                            .TryCast<MemberAccessExpressionSyntax>()!.Name
+                            .TryCast<GenericNameSyntax>()!.TypeArgumentList.Arguments[0].ToString()
+                        : invocation?.Expression
+                            .TryCast<MemberAccessExpressionSyntax>()!.Name
+                            .TryCast<GenericNameSyntax>()!.TypeArgumentList.Arguments[1].ToString();
+
+                // Extract the defaultValueFactory for CreateBuilderFor<T>()
+                (string, string)? createBuilderForInfo = null;
+
+                if (invocation?.ArgumentList.Arguments.Count is not 0)
+                {
+                    var createBuilderForBuilderTypeParameter = invocation?.Expression
+                        .TryCast<MemberAccessExpressionSyntax>()!.Name
                         .TryCast<GenericNameSyntax>()!.TypeArgumentList.Arguments[0].ToString();
+
+                    var createBuilderForDefaultValueFactory =
+                        invocation?.ArgumentList.Arguments.ElementAtOrDefault(0)?.Expression.ToString();
+
+                    createBuilderForInfo = (createBuilderForBuilderTypeParameter, createBuilderForDefaultValueFactory);
+                }
 
                 // Collect all chained .AddStep(...) calls to build a step list
                 var addStepInvocations =
@@ -134,7 +155,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     ClassName: className,
                     TypeParametersAndConstraints: classTypeParametersAndConstraints,
                     SidePath: sidePathForBuilders,
-                    DeclaredNamespace: builderNamespace
+                    DeclaredNamespace: builderNamespace,
+                    CreateBuilderForDefaultValueFactoryInfo: createBuilderForInfo
                 );
             }
         );
@@ -240,6 +262,12 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             : $"namespace {builderInfo.DeclaredNamespace};";
         var (typeParams, constraints) = builderInfo.TypeParametersAndConstraints;
         var className = builderInfo.ClassName;
+
+        string? createBuilderInfoDefaultValueFactory = null;
+        if (builderInfo.CreateBuilderForDefaultValueFactoryInfo?.Item1 == className)
+        {
+            createBuilderInfoDefaultValueFactory = builderInfo.CreateBuilderForDefaultValueFactoryInfo?.Item2;
+        }
 
         // We'll accumulate all the "I{ClassName}XYZ" interfaces here
         var interfaceNames = new List<string>();
@@ -494,8 +522,20 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                                }
 
                                            """);
-                }
 
+                    if (createBuilderInfoDefaultValueFactory is not null && nextName == "Build")
+                    {
+                        sourceBuilder.Append($$"""
+                                                   public static {{returnIface}} SkipTo{{nextName}}{{genericParams}}(
+                                                       this {{sourceIface}} step
+                                                   ) {{constraints}}
+                                                   {
+                                                       return step{{chainAll}}.Build();
+                                                   }
+
+                                               """);
+                    }
+                }
 
                 currentStep = currentStep.Next;
             }
@@ -505,7 +545,26 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                  """);
         }
 
-        // 11) If this builder extends another, generate an extension method to jump into the new builder
+        //11) If Build has default value factory, generate appropriate extension method
+        if (createBuilderInfoDefaultValueFactory is not null)
+        {
+            var extensionClassName = $"Init{className}Extensions";
+
+            sourceBuilder.Append($$"""
+
+
+                                   public static partial class {{extensionClassName}}
+                                   {
+                                      public static {{targetType}} Build{{genericParams}}(this {{interfaceNames.Last()}} step) {{constraints}}
+                                      {
+                                          Func<{{className}}{{genericParams}}, {{targetType}}> valueFactory = {{createBuilderInfoDefaultValueFactory}};
+                                          return step.Build(valueFactory);
+                                      }
+                                   }
+                                   """);
+        }
+
+        // 12) If this builder extends another, generate an extension method to jump into the new builder
         if (builderToExtendName is not null)
         {
             var firstStepInfo = stepsArray[0];
@@ -530,7 +589,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                    """);
         }
 
-        // 12) Finally, add the generated code to the compilation
+        // 13) Finally, add the generated code to the compilation
         var hintName = $"{className}.g.cs";
         context.AddSource(hintName, sourceBuilder.ToString());
     }

@@ -24,6 +24,7 @@ public interface IGenerateStepwiseBuilderAddStep
         Func<TArgument>? defaultValueFactory = null);
 
     void CreateBuilderFor<TResult>();
+    void CreateBuilderFor<TBuilder, TResult>(Func<TBuilder, TResult>? defaultValueFactory = null);
 }
 
 public class GenerateStepwiseBuilder : IGenerateStepwiseBuilderInitialSteps, IGenerateStepwiseBuilderAddStep
@@ -62,6 +63,10 @@ public class GenerateStepwiseBuilder : IGenerateStepwiseBuilderInitialSteps, IGe
     }
 
     public void CreateBuilderFor<TResult>()
+    {
+    }
+
+    public void CreateBuilderFor<TBuilder, TResult>(Func<TBuilder, TResult>? defaultValueFactory = null)
     {
     }
 }
