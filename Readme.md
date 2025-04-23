@@ -1,188 +1,163 @@
 # Stepwise Builder Generator
 
-This repository provides a **Source Generator** that creates strongly-typed, stepwise “fluent” builders for your types.
-You simply annotate a class with `[StepwiseBuilder]` and specify the steps you need in the class’s parameterless
-constructor. The source generator then produces a partial class containing builder interfaces and step methods.
-
-## Why Use Stepwise Builders?
-
-- **Compile-time safety**: Each required step is enforced in sequence.
-- **Reduced boilerplate**: No need to handwrite repetitive builder chains.
-- **Readable & maintainable**: Clean, fluent APIs that guide users step-by-step.
-
-## How It Works
-
-1. **Annotate a class with `[StepwiseBuilder]`.**
-2. **Inside the parameterless constructor**, create a chain of methods using `GenerateStepwiseBuilder()`:
-    - **`AddStep<TArgument>(stepName, fieldName = null)`**: adds a step to capture a value of type `TArgument`.
-    - **`BranchFrom("BaseBuilderName", "BaseBuilderStep")`** (optional): indicates an alternate path is offered from the
-      step **before** `BaseBuilderStep` in `BaseBuilderName`.
-    - **`CreateBuilderFor<TResult>()`**: defines the final target type being built.
-
-When you compile, the generator inspects these calls and automatically produces:
-
-- **A partial builder class** that implements interfaces representing each step.
-- **A chain of interfaces** (e.g., `IYourClassFirstStep`, `IYourClassSecondStep`, …) to enforce the order of steps.
-- **An optional extension method** if you used `BranchFrom(...)`, allowing you to jump to a new step at the point *
-  *before** a specified step in another builder’s chain.
+A lightweight C# source generator that produces strongly-typed, stepwise “fluent” builders. Simply annotate a class and describe its steps; the generator emits interfaces and a partial class to guide callers through each required step.
 
 ---
 
-## Quick Start Example
+## Features
 
-### 1. Create a Class & Decorate with `[StepwiseBuilder]`
+- **`AddStep<T>(stepName, fieldName = null)`**  
+  Define each required input in order.
 
+- **Default-value support**  
+  Supply a factory for a step so callers can use `.StepName()` with no arguments.
+
+- **`BranchFrom(baseBuilder, baseStep)`**  
+  Insert an alternate path from one builder into another.
+
+- **Enum of steps**  
+  Every generated builder includes `enum Steps { … }` for logging or reflection.
+
+- **Static factories**  
+  `StepwiseBuilders.YourBuilder()` to kick off a chain.
+
+---
+
+## Examples
+
+### 1. Basic builder  
+
+**Target type**:
 ```csharp
-using StepwiseBuilderGenerator;
-
-[StepwiseBuilder]
-public partial class MyClass
+public class Order
 {
-    public MyClass() // Parameterless constructor
+    public int Id { get; init; }
+    public string Customer { get; init; }
+    public decimal Total { get; init; }
+}
+```
+
+**Builder declaration**:
+```csharp
+[StepwiseBuilder]
+public partial class OrderBuilder
+{
+    public OrderBuilder()
     {
-        GenerateStepwiseBuilder()
-            .AddStep<int>("FirstStep", "MyIntField")
-            .AddStep<string>("SecondStep")  // defaults to "SecondStepValue"
-            .AddStep<bool>("ThirdStep")     // further step
-            .CreateBuilderFor<MyTargetType>();
+        GenerateStepwiseBuilder
+            .AddStep<int>("SetId",    "Id")
+            .AddStep<string>("SetCustomer")
+            .AddStep<decimal>("SetTotal")
+            .CreateBuilderFor<Order>();
     }
 }
 ```
 
-When you build your project, the generator produces `MyClass.g.cs` in the same namespace, containing:
-
-1. **`IMyClassFirstStep`** with `.FirstStep(int value)`.
-2. **`IMyClassSecondStep`** with `.SecondStep(string value)`.
-3. **`IMyClassThirdStep`** with `.ThirdStep(bool value)`.
-4. **`IMyClassBuild`** with `.Build(Func<MyClass, MyTargetType> buildFunc)`.
-5. A **partial `MyClass`** that implements all the above interfaces, storing step values in fields
-   like `public int MyIntField;`, `public string SecondStepValue;`, etc.
-
-### 2. Using the Generated Builder
-
+**Usage**:
 ```csharp
-var builder = new MyClass();
-
-MyTargetType result = builder
-    .FirstStep(42)
-    .SecondStep("Hello")
-    .ThirdStep(true)
-    .Build(instance =>
-    {
-        return new MyTargetType
-        {
-            SomeIntProperty = instance.MyIntField,
-            SomeStringProperty = instance.SecondStepValue,
-            SomeBoolProperty = instance.ThirdStepValue
-        };
-    });
+var order = StepwiseBuilders.OrderBuilder()
+    .SetId(123)
+    .SetCustomer("Acme Co.")
+    .SetTotal(99.95m)
+    .Build(o => o);
 ```
 
-The **stepwise** nature ensures you can’t skip or reorder steps; they must be called in the generated sequence.
+---
 
-### 3. Branching from Another Builder
+### 2. Default-value steps  
 
-Suppose we want an alternative path that branches **before** `SecondStep`. Here’s our original chain in `MyClass`:
-
+**Target type**:
+```csharp
+public class ReportConfig
+{
+    public string Title        { get; init; }
+    public bool   IncludeCharts{ get; init; }
+}
 ```
-FirstStep -> SecondStep -> ThirdStep -> Build
-```
 
-By writing:
-
+**Builder declaration**:
 ```csharp
 [StepwiseBuilder]
-public partial class MyOtherClass
+public partial class ReportConfigBuilder
 {
-    public MyOtherClass()
+    public ReportConfigBuilder()
     {
-        GenerateStepwiseBuilder()
-            .BranchFrom("MyClass", "SecondStep")  // offer a path from BEFORE 'SecondStep'
-            .AddStep<bool>("AlternateStep")
-            .CreateBuilderFor<AnotherType>();
+        GenerateStepwiseBuilder
+            .AddStep<string>("WithTitle")
+            .AddStep<bool>("IncludeCharts", defaultValueFactory: () => true)
+            .CreateBuilderFor<ReportConfig>();
     }
 }
 ```
 
-We get:
+**Usage**:
+```csharp
+// uses default IncludeCharts = true
+var config = StepwiseBuilders.ReportConfigBuilder()
+    .WithTitle("Q1 Results")
+    .IncludeCharts()   // no arg → defaultValueFactory invoked
+    .Build(c => c);
+```
 
-- A **partial `MyOtherClass`** with steps for `.AlternateStep(...)`.
-- An **extension method** so that **right after** `FirstStep(...)` in `MyClass`, you can **choose** either to
-  go `.SecondStep(...) -> ThirdStep(...) -> Build` **or** `.AlternateStep(...) -> Build`.
-- Because it’s a **separate path**, once you choose `.AlternateStep(...)`, you **cannot** call `.ThirdStep(...)`.
+---
+
+### 3. Branching between builders  
+
+**Base builder** (`UserBuilder`):
+```csharp
+[StepwiseBuilder]
+public partial class UserBuilder
+{
+    public UserBuilder()
+    {
+        GenerateStepwiseBuilder
+            .AddStep<string>("SetName")
+            .AddStep<int>("SetAge")
+            .CreateBuilderFor<User>();
+    }
+}
+```
+
+**Branching builder** (`VipUserBuilder`):
+```csharp
+[StepwiseBuilder]
+public partial class VipUserBuilder
+{
+    public VipUserBuilder()
+    {
+        GenerateStepwiseBuilder
+            .BranchFrom("UserBuilder", "SetAge")
+            .AddStep<string>("SetMembershipLevel")
+            .CreateBuilderFor<VipUser>();
+    }
+}
+```
+
+**Usage**:
+```csharp
+// regular user
+var u1 = StepwiseBuilders.UserBuilder()
+    .SetName("Alice")
+    .SetAge(30)
+    .Build(u => u);
+
+// VIP user branches in after SetAge
+var vip = StepwiseBuilders.UserBuilder()
+    .SetName("Bob")
+    .SetAge(45)
+    .SetMembershipLevel("Gold")
+    .Build(v => v);
+```
 
 ---
 
 ## FAQ
 
-### 1. What if I have generics in my class?
+**Q: Can I inject services or dependencies into a builder?**  
+A: Yes—since the generated builders are `partial` classes, you’re free to add your own constructor(s) (e.g. taking `ILogger`, `IRepository`, etc.) in another `partial` file. Dependency-injected fields or properties will be available when the step methods run.
 
-The generator handles generic type parameters by including them in the generated partial class and interfaces.
+**Q: What if I omit the `fieldName` in `AddStep`?**  
+A: A field named `{StepName}Value` is generated automatically.
 
-### 2. What if I have a **branch** in a **generic** class?
-
-If you have a branch (`BranchFrom(...)`), the **branching class** should have a **matching generic signature** (names,
-constraints, etc.) so the extension methods can properly link the two builders.
-
-### 3. Can I add custom logic to steps?
-
-Yes. Because the generated class is `partial`, you can add your own partial methods or fields. Steps themselves are
-automatically generated as chainable methods.
-
-### 4. What happens if I omit a step’s `fieldName` parameter?
-
-The generator will default to naming that field as `"{StepName}Value"`. For example, if your step
-is `.AddStep<int>("Foo")`, the field becomes `public int FooValue;`.
-
-### 5. Should I always write the build logic in `.Build(...)`?
-
-Not necessarily. It’s often beneficial to **keep the `.Build(...)` method minimal** and place common or advanced build
-logic in **extension methods**. For instance, suppose your generated interface is `IMyClassBuild`; you can do:
-
-```csharp
-public static class MyClassBuilderExtensions
-{
-    // This extension method extends the build interface directly
-    public static MyTargetType BuildMyTarget(this IMyClassBuild builder)
-    {
-        // Here, we call the underlying Build method, passing in your creation logic.
-        // You have direct access via the 'myClass' parameter in the delegate.
-        return builder.Build(myClass => 
-        {
-            return new MyTargetType
-            {
-                SomeIntProperty    = myClass.MyIntField,
-                SomeStringProperty = myClass.SecondStepValue,
-                SomeBoolProperty   = myClass.ThirdStepValue
-            };
-        });
-    }
-}
-```
-
-Then in user code, you simply do:
-
-```csharp
-var result = new MyClass()
-    .FirstStep(42)
-    .SecondStep("Hello")
-    .ThirdStep(true)
-    .BuildMyTarget();
-```
-
-This keeps your builder usage consistent while consolidating object-creation details elsewhere.
-
----
-
-## Steps Enum
-
-Each generated builder class includes **`enum Steps`** listing all steps (excluding the final `Build`) in the order they
-were declared. You might use this for logging, debugging, or reflection-based logic if desired.
-
----
-
-## Factory Methods in StepwiseBuilders
-
-For each generated base builder, the generator also provides a **static factory method** within the `StepwiseBuilders` partial class. These methods allow you to conveniently initialize a builder without directly instantiating the generated partial class.
-
----
+**Q: How do I supply custom “Build” logic?**  
+A: Call `.Build(instance => /* your mapping to target */)` or add extension methods on the final build interface for reusable patterns.
