@@ -33,9 +33,7 @@ internal static class Extensions
 
         do
         {
-            var argumentsList = invocation!.ArgumentList.Arguments.Select(static a => a.ToString().Trim('"'))
-                .ToEquatableArray();
-
+            var argumentsList = ParseArguments(invocation!.ArgumentList);
             memberAccessExpression = invocation.Expression as MemberAccessExpressionSyntax;
             invocation = memberAccessExpression!.Expression as InvocationExpressionSyntax;
 
@@ -49,7 +47,8 @@ internal static class Extensions
         return methodsInfo;
     }
 
-    internal static TResult? TryFindFirstNode<TResult>(this SyntaxNode node, Func<TResult, bool> filter) where TResult : class
+    internal static TResult? TryFindFirstNode<TResult>(this SyntaxNode node, Func<TResult, bool> filter)
+        where TResult : class
     {
         // Check if the node is of the type we're looking for
         if (node is TResult result)
@@ -63,9 +62,34 @@ internal static class Extensions
         // Recursively traverse each child node
         foreach (var child in node.ChildNodes())
         {
-            return TryFindFirstNode<TResult>(child, filter); // Recursive call for each child node
+            return TryFindFirstNode(child, filter); // Recursive call for each child node
         }
 
         return null;
+    }
+
+    private static Dictionary<ArgumentType, string?> ParseArguments(ArgumentListSyntax argumentList)
+    {
+        var parameters = new[]
+        {
+            ArgumentType.StepName, ArgumentType.FieldName, ArgumentType.DefaultValueFactory, ArgumentType.BuilderName,
+            ArgumentType.BranchFromStepName
+        };
+
+        return parameters.ToDictionary(parameter => parameter, parameter => GetArgument(argumentList, parameter));
+    }
+
+    private static string? GetArgument(ArgumentListSyntax argumentList, ArgumentType type)
+    {
+        var expr = (argumentList.Arguments.FirstOrDefault(a =>
+                        a.NameColon?.Name.Identifier.Text == type.ToArgumentName())
+                    ?? (argumentList.Arguments.ElementAtOrDefault(type.ToArgumentOrder())?.NameColon?.Name
+                        .Identifier == null
+                        ? argumentList.Arguments.ElementAtOrDefault(type.ToArgumentOrder())
+                        : null))?.Expression;
+
+        var literalExpr = expr?.TryCast<LiteralExpressionSyntax>()?.ToString().Trim('"');
+        
+        return literalExpr ?? expr?.ToString();
     }
 }
