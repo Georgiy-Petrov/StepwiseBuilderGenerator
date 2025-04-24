@@ -59,7 +59,12 @@ var order = StepwiseBuilders.OrderBuilder()
     .SetId(123)
     .SetCustomer("Acme Co.")
     .SetTotal(99.95m)
-    .Build(o => o);
+    .Build(b => new Order
+    {
+        Id       = b.Id,
+        Customer = b.SetCustomerValue,
+        Total    = b.SetTotalValue
+    });
 ```
 
 ---
@@ -85,7 +90,11 @@ public partial class ReportConfigBuilder
         GenerateStepwiseBuilder
             .AddStep<string>("WithTitle")
             .AddStep<bool>("IncludeCharts", defaultValueFactory: () => true)
-            .CreateBuilderFor<ReportConfig>();
+            .CreateBuilderFor<ReportConfig>(b => new ReportConfig
+            {
+                Title         = b.WithTitleValue,
+                IncludeCharts = b.IncludeChartsValue
+            });
     }
 }
 ```
@@ -96,7 +105,7 @@ public partial class ReportConfigBuilder
 var config = StepwiseBuilders.ReportConfigBuilder()
     .WithTitle("Q1 Results")
     .IncludeCharts()   // no arg → defaultValueFactory invoked
-    .Build(c => c);
+    .Build();          // no arg → defaultValueFactory invoked
 ```
 
 ---
@@ -139,14 +148,23 @@ public partial class VipUserBuilder
 var u1 = StepwiseBuilders.UserBuilder()
     .SetName("Alice")
     .SetAge(30)
-    .Build(u => u);
+    .Build(b => 
+    {
+        Name = b.SetNameValue,
+        Age = b.SetAgeValue
+    });
 
 // VIP user branches in after SetAge
 var vip = StepwiseBuilders.UserBuilder()
     .SetName("Bob")
     .SetAge(45)
     .SetMembershipLevel("Gold")
-    .Build(v => v);
+    .Build(b 
+    {
+        Name = b.OriginalBuilder.SetNameValue,
+        Age = b.OriginalBuilder.SetAgeValue,
+        SetMembershipLevel = b.SetMembershipLevelValue
+    });
 ```
 
 ---
