@@ -12,6 +12,9 @@ A lightweight C# source generator that produces strongly-typed, stepwise “flue
 - **Default-value support**  
   Supply a factory for a step so callers can use `.StepName()` with no arguments.
 
+- **`AndOverload<TSource, TValue>(mapper)`**  
+ Define one or more overloads on a step so callers can pass in a different source type—which your `mapper` function will translate into the required parameter type.  
+
 - **`BranchFrom(baseBuilder, baseStep)`**  
   Insert an alternate path from one builder into another.
 
@@ -90,7 +93,7 @@ public partial class ReportConfigBuilder
         GenerateStepwiseBuilder
             .AddStep<string>("WithTitle")
             .AddStep<bool>("IncludeCharts", defaultValueFactory: () => true)
-            .CreateBuilderFor<ReportConfig>(b => new ReportConfig
+            .CreateBuilderFor<ReportConfigBuilder, ReportConfig>(b => new ReportConfig
             {
                 Title         = b.WithTitleValue,
                 IncludeCharts = b.IncludeChartsValue
@@ -165,6 +168,31 @@ var vip = StepwiseBuilders.UserBuilder()
         Age = b.OriginalBuilder.SetAgeValue,
         SetMembershipLevel = b.SetMembershipLevelValue
     });
+```
+
+---
+
+### 4. Overload mappings with `AndOverload`
+**Builder declaration:**
+```csharp
+[StepwiseBuilder]
+public partial class SimpleBuilder
+{
+    public SimpleBuilder()
+     {
+        GenerateStepwiseBuilder
+            .AddStep<int>("SetValue")
+                .AndOverload<string, int>(s => int.Parse(s))
+            .CreateBuilderFor<int>();
+    }
+}
+```
+**Usage:**
+```csharp
+var result = StepwiseBuilders.SimpleBuilder()
+    //.SetValue(123)         // uses direct step with int
+    .SetValue("123")         // uses string→int mapper extension
+    .Build(b => b.SetValueValue);
 ```
 
 ---

@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 
 namespace StepwiseBuilderGenerator.Sample;
 
@@ -99,7 +100,7 @@ public partial class StepsWithDefaultValuesWithClosureCallExample
     public StepsWithDefaultValuesWithClosureCallExample()
     {
         var someString = "John";
-        
+
         GenerateStepwiseBuilder
             .AddStep<string>("SetName", defaultValueFactory: () => $"John {someString}")
             .AddStep<string>("SetLastName", "LastName", () => "Snow")
@@ -142,7 +143,7 @@ public partial class StepsWithDefaultValuesSeveralCallsWithGapsExample
 }
 
 [StepwiseBuilder]
-public partial class StepsWithDefaultValuesWithGenericExample<T, T1> 
+public partial class StepsWithDefaultValuesWithGenericExample<T, T1>
     where T : Exception
     where T1 : Exception
 {
@@ -151,6 +152,19 @@ public partial class StepsWithDefaultValuesWithGenericExample<T, T1>
         GenerateStepwiseBuilder
             .AddStep<string>("SetName", "Name", () => "John")
             .AddStep<T>("SetLastName", "LastName", () => default)
+            .AddStep<string>("SetTown", "Town", () => "Wall")
+            .CreateBuilderFor<string>();
+    }
+}
+
+[StepwiseBuilder]
+public partial class StepsWithDefaultValuesWithAsyncCallExample
+{
+    public StepsWithDefaultValuesWithAsyncCallExample()
+    {
+        GenerateStepwiseBuilder
+            .AddStep<string>("SetName", defaultValueFactory: () => "John")
+            .AddStep<Task<string>>("SetLastName", "LastName", async () => await Task.FromResult("Snow"))
             .AddStep<string>("SetTown", "Town", () => "Wall")
             .CreateBuilderFor<string>();
     }

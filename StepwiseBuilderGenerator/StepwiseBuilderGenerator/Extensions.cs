@@ -73,7 +73,7 @@ internal static class Extensions
         var parameters = new[]
         {
             ArgumentType.StepName, ArgumentType.FieldName, ArgumentType.DefaultValueFactory, ArgumentType.BuilderName,
-            ArgumentType.BranchFromStepName
+            ArgumentType.BranchFromStepName, ArgumentType.AndOverloadMapper
         };
 
         return parameters.ToDictionary(parameter => parameter, parameter => GetArgument(argumentList, parameter));
@@ -89,7 +89,7 @@ internal static class Extensions
                         : null))?.Expression;
 
         var literalExpr = expr?.TryCast<LiteralExpressionSyntax>()?.ToString().Trim('"');
-        
+
         return literalExpr ?? expr?.ToString();
     }
 }

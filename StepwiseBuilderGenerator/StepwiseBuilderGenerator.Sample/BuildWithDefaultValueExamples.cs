@@ -40,7 +40,7 @@ public partial class BuildWithDefaultValuesAsOnlySeveralCallsExample
 }
 
 [StepwiseBuilder]
-public partial class BuildWithDefaultValuesWithGenericExample<T, T1> 
+public partial class BuildWithDefaultValuesWithGenericExample<T, T1>
     where T : Exception
     where T1 : Exception
 {
@@ -56,7 +56,7 @@ public partial class BuildWithDefaultValuesWithGenericExample<T, T1>
 
 [StepwiseBuilder]
 // Extension method with default value factory isn't generated
-public partial class BuildWithDefaultValuesWithWrongBuilderTypeForDefaultValueFactoryExample 
+public partial class BuildWithDefaultValuesWithWrongBuilderTypeForDefaultValueFactoryExample
 {
     public BuildWithDefaultValuesWithWrongBuilderTypeForDefaultValueFactoryExample()
     {

@@ -82,7 +82,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     invocation?.Expression
                         .TryCast<MemberAccessExpressionSyntax>()!.Name
                         .TryCast<GenericNameSyntax>()!.TypeArgumentList.Arguments.Count == 1
-                        ? invocation?.Expression
+                        ? invocation.Expression
                             .TryCast<MemberAccessExpressionSyntax>()!.Name
                             .TryCast<GenericNameSyntax>()!.TypeArgumentList.Arguments[0].ToString()
                         : invocation?.Expression
@@ -117,6 +117,37 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                             ParameterType: methodInfo.GenericArguments!.Value.GetArray()!.Single(),
                             DefaultValueFactory: methodInfo.Arguments[ArgumentType.DefaultValueFactory]))
                         .OrderBy(static step => step.Order)
+                        .ToEquatableArray();
+
+                // Collect all chained .AndOverload(...) calls to build a overloads list
+                var stepInfosOverloads =
+                    invocation
+                        .CollectMethodsInChain()
+                        .Reverse() // ensure we process them in source order
+                        .Aggregate(("", new List<StepInfoOverloadInfo>()), (tuple, info) =>
+                        {
+                            var (currentStepName, stepInfoOverloadInfo) = tuple;
+
+                            if (info.MethodName is "AddStep")
+                            {
+                                currentStepName = info.Arguments[ArgumentType.StepName]!;
+                                return (currentStepName, stepInfoOverloadInfo);
+                            }
+
+                            if (info.MethodName is "AndOverload")
+                            {
+                                var stepInfoOverload = new StepInfoOverloadInfo(
+                                    StepName: currentStepName,
+                                    ParameterType: info.GenericArguments!.Value.GetArray()![0],
+                                    ReturnType: info.GenericArguments!.Value.GetArray()![1],
+                                    Mapper: info.Arguments[ArgumentType.AndOverloadMapper]!);
+                                stepInfoOverloadInfo.Add(stepInfoOverload);
+
+                                return (currentStepName, stepInfoOverloadInfo);
+                            }
+
+                            return (currentStepName, stepInfoOverloadInfo);
+                        }).Item2
                         .ToEquatableArray();
 
                 // Retrieve the class declaration and its info (namespace, name, constraints, etc.)
@@ -156,7 +187,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     TypeParametersAndConstraints: classTypeParametersAndConstraints,
                     SidePath: sidePathForBuilders,
                     DeclaredNamespace: builderNamespace,
-                    CreateBuilderForDefaultValueFactoryInfo: createBuilderForInfo
+                    CreateBuilderForDefaultValueFactoryInfo: createBuilderForInfo,
+                    StepInfosOverloads: stepInfosOverloads.Count is 0 ? null : stepInfosOverloads
                 );
             }
         );
@@ -590,7 +622,44 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                    """);
         }
 
-        // 13) Finally, add the generated code to the compilation
+        // 13) If this builder has AndOverload, generate an extension methods with overloads for steps
+        if (builderInfo.StepInfosOverloads is not null)
+        {
+            var extensionClassName = $"Init{className}Extensions";
+
+            sourceBuilder.Append($$"""
+
+                                   public static partial class {{extensionClassName}}
+                                   {
+                                   """);
+
+            foreach (var stepOverload in builderInfo.StepInfosOverloads)
+            {
+                var stepInfo = stepsArray.First(s => s.StepName == stepOverload.StepName);
+                var stepInterface = interfaceNames[stepInfo.Order];
+                var extensionReturn = interfaceNames[stepInfo.Order + 1];
+
+                sourceBuilder.Append($$"""
+                                       
+                                           public static {{extensionReturn}} {{stepInfo.StepName}}{{genericParams}}(
+                                               this {{stepInterface}} originalStep,
+                                               {{stepOverload.ParameterType}} value
+                                           ) {{constraints}}
+                                           {
+                                               Func<{{stepOverload.ParameterType}}, {{stepOverload.ReturnType}}> mapper = {{stepOverload.Mapper}};
+                                               return originalStep.{{stepInfo.StepName}}(mapper(value));
+                                           }
+                                           
+                                       """);
+            }
+
+            sourceBuilder.Append($$"""
+
+                                   }
+                                   """);
+        }
+
+        // 14) Finally, add the generated code to the compilation
         var hintName = $"{className}.g.cs";
         context.AddSource(hintName, sourceBuilder.ToString());
     }

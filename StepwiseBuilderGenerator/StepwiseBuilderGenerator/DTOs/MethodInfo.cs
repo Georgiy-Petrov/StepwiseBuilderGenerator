@@ -21,6 +21,7 @@ internal enum ArgumentType
     DefaultValueFactory,
     BuilderName,
     BranchFromStepName,
+    AndOverloadMapper,
 }
 
 internal static class ArgumentTypeExtensions
@@ -34,9 +35,10 @@ internal static class ArgumentTypeExtensions
                 ArgumentType.DefaultValueFactory => 2,
                 ArgumentType.BuilderName => 0,
                 ArgumentType.BranchFromStepName => 1,
+                ArgumentType.AndOverloadMapper => 0,
                 _ => throw new ArgumentOutOfRangeException(nameof(argumentType), argumentType, null)
             };
-    
+
     public static string ToArgumentName(this ArgumentType argumentType)
         =>
             argumentType switch
@@ -46,18 +48,7 @@ internal static class ArgumentTypeExtensions
                 ArgumentType.DefaultValueFactory => "defaultValueFactory",
                 ArgumentType.BuilderName => "builderName",
                 ArgumentType.BranchFromStepName => "stepName",
+                ArgumentType.AndOverloadMapper => "mapper",
                 _ => throw new ArgumentOutOfRangeException(nameof(argumentType), argumentType, null)
-            };
-    
-    public static ArgumentType ToArgumentType(int order, string argumentTypeAsString)
-        =>
-            (order, argumentTypeAsString) switch
-            {
-                (0, "stepName") => ArgumentType.StepName,
-                (1, "fieldName")=> ArgumentType.FieldName,
-                (2, "defaultValueFactory")=> ArgumentType.DefaultValueFactory,
-                (0, "builderName")=> ArgumentType.BuilderName,
-                (1, "stepName")=> ArgumentType.BranchFromStepName,
-                _ => throw new ArgumentOutOfRangeException(nameof(argumentTypeAsString), argumentTypeAsString, null)
             };
 }

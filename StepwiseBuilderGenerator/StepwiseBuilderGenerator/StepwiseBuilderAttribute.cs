@@ -23,8 +23,10 @@ public interface IGenerateStepwiseBuilderAddStep
     IGenerateStepwiseBuilderAddStep AddStep<TArgument>(string stepName, string? fieldName = null,
         Func<TArgument>? defaultValueFactory = null);
 
+    IGenerateStepwiseBuilderAddStep AndOverload<TIn, TOut>(Func<TIn, TOut> mapper);
+
     void CreateBuilderFor<TResult>();
-    void CreateBuilderFor<TBuilder, TResult>(Func<TBuilder, TResult>? defaultValueFactory = null);
+    void CreateBuilderFor<TBuilder, TResult>(Func<TBuilder, TResult> defaultValueFactory);
 }
 
 public class GenerateStepwiseBuilder : IGenerateStepwiseBuilderInitialSteps, IGenerateStepwiseBuilderAddStep
@@ -62,11 +64,16 @@ public class GenerateStepwiseBuilder : IGenerateStepwiseBuilderInitialSteps, IGe
         return this;
     }
 
+    public IGenerateStepwiseBuilderAddStep AndOverload<TIn, TOut>(Func<TIn, TOut> mapper)
+    {
+        return this;
+    }
+
     public void CreateBuilderFor<TResult>()
     {
     }
 
-    public void CreateBuilderFor<TBuilder, TResult>(Func<TBuilder, TResult>? defaultValueFactory = null)
+    public void CreateBuilderFor<TBuilder, TResult>(Func<TBuilder, TResult> defaultValueFactory)
     {
     }
 }
