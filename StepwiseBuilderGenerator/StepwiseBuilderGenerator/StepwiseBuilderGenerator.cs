@@ -263,12 +263,6 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         var (typeParams, constraints) = builderInfo.TypeParametersAndConstraints;
         var className = builderInfo.ClassName;
 
-        string? createBuilderInfoDefaultValueFactory = null;
-        if (builderInfo.CreateBuilderForDefaultValueFactoryInfo?.Item1 == className)
-        {
-            createBuilderInfoDefaultValueFactory = builderInfo.CreateBuilderForDefaultValueFactoryInfo?.Item2;
-        }
-
         // We'll accumulate all the "I{ClassName}XYZ" interfaces here
         var interfaceNames = new List<string>();
 
@@ -279,6 +273,13 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             genericParams = $"<{typeParams}>";
             if (genericParams == "<>")
                 genericParams = null;
+        }
+
+        // Determine if provided Type parameter in CreateBuilderFor with defaultValueFactory matches builder type
+        string? createBuilderInfoDefaultValueFactory = null;
+        if (builderInfo.CreateBuilderForDefaultValueFactoryInfo?.Item1 == className + genericParams)
+        {
+            createBuilderInfoDefaultValueFactory = builderInfo.CreateBuilderForDefaultValueFactoryInfo?.Item2;
         }
 
         // Build the generated code in a StringBuilder
