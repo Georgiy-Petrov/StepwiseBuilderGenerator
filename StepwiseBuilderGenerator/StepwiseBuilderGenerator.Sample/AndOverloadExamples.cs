@@ -147,6 +147,25 @@ public partial class OverloadsInBranchCallExample
     }
 }
 
+// 10) Single overload on the very first step
+[StepwiseBuilder]
+public partial class OverloadWithNewNameExample
+{
+    public OverloadWithNewNameExample()
+    {
+        GenerateStepwiseBuilder
+            .AddStep<int>("SetId")
+            .AndOverload<string, int>(s => int.Parse(s), "SetIdFromString")
+            .AddStep<string>("SetName")
+            .CreateBuilderFor<string>();
+    }
+    public void Test()
+    {
+        // SetAddress with int parameter is accessible 
+        StepwiseBuilders.OverloadWithNewNameExample().SetIdFromString("123");
+    }
+}
+
 // Dummy domain types used above
 public class Schedule
 {

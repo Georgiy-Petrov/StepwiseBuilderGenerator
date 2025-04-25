@@ -140,7 +140,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                     StepName: currentStepName,
                                     ParameterType: info.GenericArguments!.Value.GetArray()![0],
                                     ReturnType: info.GenericArguments!.Value.GetArray()![1],
-                                    Mapper: info.Arguments[ArgumentType.AndOverloadMapper]!);
+                                    Mapper: info.Arguments[ArgumentType.AndOverloadMapper]!,
+                                    OverloadMethodName: info.Arguments[ArgumentType.AndOverloadNewName]);
                                 stepInfoOverloadInfo.Add(stepInfoOverload);
 
                                 return (currentStepName, stepInfoOverloadInfo);
@@ -638,6 +639,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                 var stepInfo = stepsArray.First(s => s.StepName == stepOverload.StepName);
                 var stepInterface = interfaceNames[stepInfo.Order];
                 var extensionReturn = interfaceNames[stepInfo.Order + 1];
+                var overloadName = stepOverload.OverloadMethodName ?? stepInfo.StepName;
 
                 if (stepInfo.Order == 0 && builderToExtendName is not null)
                 {
@@ -647,7 +649,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
                 sourceBuilder.Append($$"""
                                        
-                                           public static {{extensionReturn}} {{stepInfo.StepName}}{{genericParams}}(
+                                           public static {{extensionReturn}} {{overloadName}}{{genericParams}}(
                                                this {{stepInterface}} originalStep,
                                                {{stepOverload.ParameterType}} value
                                            ) {{constraints}}

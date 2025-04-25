@@ -22,6 +22,7 @@ internal enum ArgumentType
     BuilderName,
     BranchFromStepName,
     AndOverloadMapper,
+    AndOverloadNewName,
 }
 
 internal static class ArgumentTypeExtensions
@@ -36,6 +37,7 @@ internal static class ArgumentTypeExtensions
                 ArgumentType.BuilderName => 0,
                 ArgumentType.BranchFromStepName => 1,
                 ArgumentType.AndOverloadMapper => 0,
+                ArgumentType.AndOverloadNewName => 1,
                 _ => throw new ArgumentOutOfRangeException(nameof(argumentType), argumentType, null)
             };
 
@@ -49,6 +51,7 @@ internal static class ArgumentTypeExtensions
                 ArgumentType.BuilderName => "builderName",
                 ArgumentType.BranchFromStepName => "stepName",
                 ArgumentType.AndOverloadMapper => "mapper",
+                ArgumentType.AndOverloadNewName => "newName",
                 _ => throw new ArgumentOutOfRangeException(nameof(argumentType), argumentType, null)
             };
 }
