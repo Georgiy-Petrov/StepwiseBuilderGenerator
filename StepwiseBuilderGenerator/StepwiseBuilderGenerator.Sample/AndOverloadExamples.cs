@@ -126,6 +126,27 @@ public partial class OverloadWithAsyncCallExample
     }
 }
 
+// 9) Branch with overloads
+[StepwiseBuilder]
+public partial class OverloadsInBranchCallExample
+{
+    public OverloadsInBranchCallExample()
+    {
+        GenerateStepwiseBuilder
+            .BranchFrom("SimpleOverloadExample", "SetName")
+            .AddStep<string>("SetAddress")
+            .AndOverload<int, string>(_ => "42")
+            .AddStep<string>("SetAddress1")
+            .CreateBuilderFor<string>();
+    }
+
+    public void Test()
+    {
+        // SetAddress with int parameter is accessible 
+        StepwiseBuilders.SimpleOverloadExample().SetId(123).SetAddress(123).SetAddress1("").Build(default);
+    }
+}
+
 // Dummy domain types used above
 public class Schedule
 {

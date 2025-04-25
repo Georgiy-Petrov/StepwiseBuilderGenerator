@@ -639,6 +639,12 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                 var stepInterface = interfaceNames[stepInfo.Order];
                 var extensionReturn = interfaceNames[stepInfo.Order + 1];
 
+                if (stepInfo.Order == 0 && builderToExtendName is not null)
+                {
+                    stepInterface = $"I{builderToExtendName}{builderInfo.SidePath!.BaseBuilderStep}{genericParams}";
+                    extensionReturn = interfaceNames[1];
+                }
+
                 sourceBuilder.Append($$"""
                                        
                                            public static {{extensionReturn}} {{stepInfo.StepName}}{{genericParams}}(
