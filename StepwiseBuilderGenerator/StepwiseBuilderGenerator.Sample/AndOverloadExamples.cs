@@ -147,7 +147,7 @@ public partial class OverloadsInBranchCallExample
     }
 }
 
-// 10) Single overload on the very first step
+// 10) Overload with custom name
 [StepwiseBuilder]
 public partial class OverloadWithNewNameExample
 {
@@ -161,7 +161,6 @@ public partial class OverloadWithNewNameExample
     }
     public void Test()
     {
-        // SetAddress with int parameter is accessible 
         StepwiseBuilders.OverloadWithNewNameExample().SetIdFromString("123");
     }
 }
