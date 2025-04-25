@@ -151,7 +151,7 @@ public partial class VipUserBuilder
 var u1 = StepwiseBuilders.UserBuilder()
     .SetName("Alice")
     .SetAge(30)
-    .Build(b => 
+    .Build(b => new User
     {
         Name = b.SetNameValue,
         Age = b.SetAgeValue
@@ -162,7 +162,7 @@ var vip = StepwiseBuilders.UserBuilder()
     .SetName("Bob")
     .SetAge(45)
     .SetMembershipLevel("Gold")
-    .Build(b 
+    .Build(b => new VipUser
     {
         Name = b.OriginalBuilder.SetNameValue,
         Age = b.OriginalBuilder.SetAgeValue,
