@@ -120,7 +120,12 @@ public partial class StepsWithDefaultValuesNavigationBetweenStepsWithDefaultValu
             .AddStep<string>("SetTown", "Town", () => "Wall")
             .AddStep<string>("SetTown2", "Town2", () => "Wall")
             .AddStep<string>("SetTown3", "Town3", () => "Wall")
-            .CreateBuilderFor<string>();
+            .CreateBuilderFor<StepsWithDefaultValuesNavigationBetweenStepsWithDefaultValuesExample, string>(b => "s");
+    }
+
+    public void Test()
+    {
+        StepwiseBuilders.StepsWithDefaultValuesNavigationBetweenStepsWithDefaultValuesExample().SkipToBuild();
     }
 }
 
@@ -167,5 +172,72 @@ public partial class StepsWithDefaultValuesWithAsyncCallExample
             .AddStep<Task<string>>("SetLastName", "LastName", async () => await Task.FromResult("Snow"))
             .AddStep<string>("SetTown", "Town", () => "Wall")
             .CreateBuilderFor<string>();
+    }
+}
+
+[StepwiseBuilder]
+public partial class StepsWithDefaultValuesSkipToNamedOverloadExample
+{
+    public StepsWithDefaultValuesSkipToNamedOverloadExample()
+    {
+        GenerateStepwiseBuilder
+            .AddStep<int>("SetAge")
+            .AddStep<string>("SetName", "Name", () => "John")
+            .AddStep<string>("SetLastName", defaultValueFactory: () => "John")
+            .AddStep<int>("SetYear")
+            .AndOverload<string, int>(i => int.Parse(i), "SetStringYear")
+            .CreateBuilderFor<string>();
+    }
+
+    public void Test()
+    {
+        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToSetStringYear("321");
+    }
+}
+
+[StepwiseBuilder]
+// Currently not possible to SkipTo branch steps from original builder, unless it is branching step
+public partial class StepsWithDefaultValuesSkipToNamedOverloadInBranchExample
+{
+    public StepsWithDefaultValuesSkipToNamedOverloadInBranchExample()
+    {
+        GenerateStepwiseBuilder
+            .BranchFrom<StepsWithDefaultValuesSkipToNamedOverloadExample>("SetLastName")
+            .AddStep<int>("SetAge1", defaultValueFactory: () => 42)
+            .AddStep<int>("SetAge2", defaultValueFactory: () => 42)
+            .AddStep<int>("SetAge3", defaultValueFactory: () => 42)
+            .AddStep<int>("SetAge4", defaultValueFactory: () => 42)
+            .AndOverload<string, int>(i => int.Parse(i), "SetAge4")
+            .AndOverload<object, int>(i => (int)i, "SetAge4")
+            .CreateBuilderFor<StepsWithDefaultValuesSkipToNamedOverloadInBranchExample, int>(b => 42);
+    }
+
+    public void Test()
+    {
+        Func<StepsWithDefaultValuesSkipToNamedOverloadInBranchExample, int>
+            buildFunc = b => 42; 
+        
+        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample()
+            .SetAge(123)
+            .SetName()
+            .SkipToBuild(buildFunc);
+    }
+}
+
+[StepwiseBuilder]
+// Currently not possible to SkipTo branch steps from original builder
+public partial class StepsWithDefaultValuesInBranchFirstStepExample
+{
+    public StepsWithDefaultValuesInBranchFirstStepExample()
+    {
+        GenerateStepwiseBuilder
+            .BranchFrom<StepsWithDefaultValuesSkipToNamedOverloadExample>("SetLastName")
+            .AddStep<int>("SetAgeWithDefault", defaultValueFactory: () => 42)
+            .CreateBuilderFor<string>();
+    }
+
+    public void Test()
+    {
+        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SetName().SetAgeWithDefault();
     }
 }

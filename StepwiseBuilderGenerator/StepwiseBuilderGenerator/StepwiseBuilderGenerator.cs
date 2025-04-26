@@ -351,7 +351,6 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         // 8) Include an enum of steps
         sourceBuilder.Append($$"""
                                
-                               
                                    public enum Steps
                                    {
 
@@ -374,6 +373,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             var returnType = interfaceNames[0];
 
             sourceBuilder.Append($$"""
+                                   
                                    public static partial class StepwiseBuilders
                                    {
                                        public static {{returnType}} {{className}}{{genericParams}}() {{constraints}}
@@ -403,9 +403,16 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
             while (currentStep is not null)
             {
+                var stepInterface = interfaceNames[currentStep.Value.Order];
+                
+                if (builderToExtendName is not null && currentStep.Value.Order == 0)
+                {
+                    stepInterface = $"I{builderToExtendName}{builderInfo.SidePath!.BaseBuilderStep}";
+                }
+                
                 sourceBuilder.Append($$"""
                                        
-                                           public static {{interfaceNames[currentStep.Value.Order + 1]}} {{currentStep.Value.StepName}}{{genericParams}}(this {{interfaceNames[currentStep.Value.Order]}} step) {{constraints}}
+                                           public static {{interfaceNames[currentStep.Value.Order + 1]}} {{currentStep.Value.StepName}}{{genericParams}}(this {{stepInterface}} step) {{constraints}}
                                            {
                                                Func<{{currentStep.Value.ParameterType}}> valueFactory = {{currentStep.Value.DefaultValueFactory}};
                                                return step.{{currentStep.Value.StepName}}(valueFactory());
@@ -425,6 +432,11 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                 if (defaultsRun.Length > 1)
                 {
                     var sourceIface = interfaceNames[start];
+                    
+                    if (builderToExtendName is not null && currentStep.Value.Order == 0)
+                    {
+                        sourceIface = $"I{builderToExtendName}{builderInfo.SidePath!.BaseBuilderStep}";
+                    }
 
                     foreach (var target in defaultsRun.Skip(1))
                     {
@@ -436,6 +448,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         );
 
                         sourceBuilder.Append($$"""
+                                               
                                                    public static {{targetIface}} SkipTo{{target.StepName}}{{genericParams}}(
                                                        this {{sourceIface}} step, {{target.ParameterType}} value
                                                    ) {{constraints}}
@@ -456,6 +469,11 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     string nextParams;
                     string nextCall;
                     string returnIface;
+                    
+                    if (builderToExtendName is not null && currentStep.Value.Order == 0)
+                    {
+                        sourceIface = $"I{builderToExtendName}{builderInfo.SidePath!.BaseBuilderStep}{genericParams}";
+                    }
 
                     if (nextIndex < stepsArray.Length)
                     {
@@ -466,6 +484,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         nextCall = $".{nextName}(value)";
                         returnIface = interfaceNames[nextIndex + 1];
                     }
+                    
                     else
                     {
                         // no steps left → Build
@@ -479,6 +498,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     var chainAll = string.Concat(defaultsRun.Select(s => $".{s.StepName}()"));
 
                     sourceBuilder.Append($$"""
+                                           
                                                public static {{returnIface}} SkipTo{{nextName}}{{genericParams}}(
                                                    this {{sourceIface}} step,
                                                    {{nextParams}}
@@ -489,9 +509,35 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
                                            """);
 
+                    if (builderInfo.StepInfosOverloads is not null)
+                    {
+                        var stepInfoOverloads = builderInfo.StepInfosOverloads.Value
+                            .Where(sio => sio.StepName == nextName).ToList();
+
+                        foreach (var stepOverload in stepInfoOverloads)
+                        {
+                            nextName = stepOverload.OverloadMethodName ?? stepOverload.StepName;
+                            nextParams = $"{stepOverload.ParameterType} value";
+                            nextCall = $".{nextName}(value)";
+
+                            sourceBuilder.Append($$"""
+                                                   
+                                                       public static {{returnIface}} SkipTo{{nextName}}{{genericParams}}(
+                                                           this {{sourceIface}} step,
+                                                           {{nextParams}}
+                                                       ) {{constraints}}
+                                                       {
+                                                           return step{{chainAll}}{{nextCall}};
+                                                       }
+
+                                                   """);
+                        }
+                    }
+
                     if (createBuilderInfoDefaultValueFactory is not null && nextName == "Build")
                     {
                         sourceBuilder.Append($$"""
+                                               
                                                    public static {{returnIface}} SkipTo{{nextName}}{{genericParams}}(
                                                        this {{sourceIface}} step
                                                    ) {{constraints}}
@@ -518,7 +564,6 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
             sourceBuilder.Append($$"""
 
-
                                    public static partial class {{extensionClassName}}
                                    {
                                       public static {{targetType}} Build{{genericParams}}(this {{interfaceNames.Last()}} step) {{constraints}}
@@ -540,6 +585,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             var extensionReturn = interfaceNames[1];
 
             sourceBuilder.Append($$"""
+                                   
                                    public static partial class {{extensionClassName}}
                                    {
                                        public static {{extensionReturn}} {{firstStepInfo.StepName}}{{genericParams}}(
@@ -580,7 +626,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                 }
 
                 sourceBuilder.Append($$"""
-                                       
+                                           
                                            public static {{extensionReturn}} {{overloadName}}{{genericParams}}(
                                                this {{stepInterface}} originalStep,
                                                {{stepOverload.ParameterType}} value
@@ -594,7 +640,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             }
 
             sourceBuilder.Append($$"""
-
+                                   
                                    }
                                    """);
         }
