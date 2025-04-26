@@ -72,7 +72,7 @@ internal static class Extensions
     {
         var parameters = new[]
         {
-            ArgumentType.StepName, ArgumentType.FieldName, ArgumentType.DefaultValueFactory, ArgumentType.BuilderName,
+            ArgumentType.StepName, ArgumentType.FieldName, ArgumentType.DefaultValueFactory,
             ArgumentType.BranchFromStepName, ArgumentType.AndOverloadMapper, ArgumentType.AndOverloadNewName
         };
 

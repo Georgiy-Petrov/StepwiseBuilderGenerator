@@ -12,7 +12,7 @@ public class StepwiseBuilder : Attribute
 
 public interface IGenerateStepwiseBuilderInitialSteps
 {
-    IGenerateStepwiseBuilderAddStep BranchFrom(string builderName, string stepName);
+    IGenerateStepwiseBuilderAddStep BranchFrom<TBuilder>(string stepName);
 
     IGenerateStepwiseBuilderAddStep AddStep<TArgument>(string stepName, string? fieldName = null,
         Func<TArgument>? defaultValueFactory = null);
@@ -42,12 +42,12 @@ public class GenerateStepwiseBuilder : IGenerateStepwiseBuilderInitialSteps, IGe
             fieldName, defaultValueFactory);
     }
 
-    public static IGenerateStepwiseBuilderAddStep BranchFrom(string builderName, string stepName)
+    public static IGenerateStepwiseBuilderAddStep BranchFrom<TBuilder>(string stepName)
     {
-        return ((IGenerateStepwiseBuilderInitialSteps)new GenerateStepwiseBuilder()).BranchFrom(builderName, stepName);
+        return ((IGenerateStepwiseBuilderInitialSteps)new GenerateStepwiseBuilder()).BranchFrom<TBuilder>(stepName);
     }
 
-    IGenerateStepwiseBuilderAddStep IGenerateStepwiseBuilderInitialSteps.BranchFrom(string builderName, string stepName)
+    IGenerateStepwiseBuilderAddStep IGenerateStepwiseBuilderInitialSteps.BranchFrom<TBuilder>( string stepName)
     {
         return this;
     }

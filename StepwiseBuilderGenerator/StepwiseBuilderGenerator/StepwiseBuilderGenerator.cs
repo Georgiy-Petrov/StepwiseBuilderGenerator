@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -32,14 +30,14 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                 // Attempt to find a parameterless constructor
                 var statements = syntaxNode
                     .TryCast<ClassDeclarationSyntax>()?
-                    .Members.FirstOrDefault(
+                    .Members.FirstOrDefault(static
                         member => member is ConstructorDeclarationSyntax { ParameterList.Parameters.Count: 0 }
                     )
                     ?.TryCast<ConstructorDeclarationSyntax>()?.Body?.Statements;
 
                 // Check if there's a statement that calls 'GenerateStepwiseBuilder'
-                var generateBuilderStatementCall = statements?.FirstOrDefault(statement =>
-                    statement.TryFindFirstNode<IdentifierNameSyntax>(identifier =>
+                var generateBuilderStatementCall = statements?.FirstOrDefault(static statement =>
+                    statement.TryFindFirstNode<IdentifierNameSyntax>(static identifier =>
                         identifier.Identifier.Text == "GenerateStepwiseBuilder") is not null);
 
                 // Verify the call to 'CreateBuilderFor(...)' is present
@@ -61,10 +59,11 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             {
                 // Find the specific invocation expression for CreateBuilderFor<T>()
                 var invocation = syntaxContext.TargetNode
-                    .TryCast<ClassDeclarationSyntax>()!.Members.First(member => member is ConstructorDeclarationSyntax
-                    {
-                        ParameterList.Parameters.Count: 0
-                    })
+                    .TryCast<ClassDeclarationSyntax>()!.Members.First(static member =>
+                        member is ConstructorDeclarationSyntax
+                        {
+                            ParameterList.Parameters.Count: 0
+                        })
                     .TryCast<ConstructorDeclarationSyntax>()!.Body!.Statements.First(static statement =>
                         statement.TryCast<ExpressionStatementSyntax>()?.Expression
                             .TryCast<InvocationExpressionSyntax>()?.Expression
@@ -74,7 +73,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
                 // Gather relevant 'using' statements
                 var usings =
-                    syntaxContext.SemanticModel.SyntaxTree.GetCompilationUnitRoot().Usings.Select(u => u.ToString())
+                    syntaxContext.SemanticModel.SyntaxTree.GetCompilationUnitRoot().Usings
+                        .Select(static u => u.ToString())
                         .ToEquatableArray();
 
                 // Extract the target type from CreateBuilderFor<T>()
@@ -124,7 +124,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     invocation
                         .CollectMethodsInChain()
                         .Reverse() // ensure we process them in source order
-                        .Aggregate(("", new List<StepInfoOverloadInfo>()), (tuple, info) =>
+                        .Aggregate(("", new List<StepInfoOverloadInfo>()), static (tuple, info) =>
                         {
                             var (currentStepName, stepInfoOverloadInfo) = tuple;
 
@@ -161,7 +161,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     classDeclaration.ConstraintClauses.ToString()
                 );
 
-                // Check if there's a side path builder call: .BranchFrom("OtherBuilder", "SomeStep")
+                // Check if there's a side path builder call: .BranchFrom<OtherBuilder>("SomeStep")
                 var sidePathForBuilders =
                     invocation
                         .CollectMethodsInChain()
@@ -169,7 +169,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         .Select(static mi =>
                         {
                             var builderToExtendName =
-                                mi.Arguments[ArgumentType.BuilderName]!.ToString();
+                                string.Join("", mi.GenericArguments!.Value.GetArray()![0].TakeWhile(c => c != '<'));
                             var stepName =
                                 mi.Arguments[ArgumentType.BranchFromStepName]!.ToString();
 
@@ -195,97 +195,28 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         );
 
         // --------------------------------------------------------------------------------
-        // 2) Define a provider for "ExtendedBuilderInfo":
-        //    - Similar logic as above, still looking for [StepwiseBuilder]-annotated classes
-        //    - Gathers minimal data (namespace, class name, usings) to support extensions
-        // --------------------------------------------------------------------------------
-        var extendedBuilderInfoProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
-            typeof(StepwiseBuilder).FullName!,
-
-            // Predicate: again looks for a parameterless constructor and "GenerateStepwiseBuilder().CreateBuilderFor(...)"
-            static (syntaxNode, _) =>
-            {
-                var statements = syntaxNode
-                    .TryCast<ClassDeclarationSyntax>()?
-                    .Members.FirstOrDefault(
-                        member => member is ConstructorDeclarationSyntax { ParameterList.Parameters.Count: 0 }
-                    )
-                    ?.TryCast<ConstructorDeclarationSyntax>()?.Body?.Statements;
-
-                var generateBuilderStatementCall = statements?.FirstOrDefault(statement =>
-                    statement.TryFindFirstNode<IdentifierNameSyntax>(identifier =>
-                        identifier.Identifier.Text == "GenerateStepwiseBuilder") is not null);
-
-                var createBuilderForCallPresence =
-                    generateBuilderStatementCall?
-                        .TryCast<ExpressionStatementSyntax>()?.Expression
-                        .TryCast<InvocationExpressionSyntax>()?.Expression
-                        .TryCast<MemberAccessExpressionSyntax>()?
-                        .Name.Identifier.Text == "CreateBuilderFor";
-
-                // Same condition as before, but we only want to gather limited extension info
-                return statements is not { Count: 0 }
-                       && generateBuilderStatementCall is not null
-                       && createBuilderForCallPresence;
-            },
-
-            // Transform: build a simple ExtendedBuilderInfo record
-            static (syntaxContext, _) =>
-            {
-                var classDeclaration = syntaxContext.TargetNode
-                    .TryCast<ClassDeclarationSyntax>();
-
-                var builderNamespace = syntaxContext.TargetSymbol.ContainingNamespace.ToString();
-
-                var usings =
-                    syntaxContext.SemanticModel.SyntaxTree.GetCompilationUnitRoot().Usings.Select(u => u.ToString())
-                        .ToEquatableArray();
-
-                // Construct the ExtendedBuilderInfo
-                return new ExtendedBuilderInfo(
-                    DeclaredNamespace: builderNamespace,
-                    ClassName: classDeclaration!.Identifier.ToString(),
-                    Usings: usings
-                );
-            }
-        );
-
-        // --------------------------------------------------------------------------------
-        // 3) Register Source Output:
+        // 2) Register Source Output:
         //    - Combine the two providers: one for main builder data (builderInfoProvider) and
         //      one for extension data (extendedBuilderInfoProvider).
         //    - Pass them as a combined tuple into our source-generation method:
         //      'GenerateSourceForStepwiseBuilders'
         // --------------------------------------------------------------------------------
         context.RegisterSourceOutput(
-            builderInfoProvider.Combine(extendedBuilderInfoProvider.Collect()),
+            builderInfoProvider,
             GenerateSourceForStepwiseBuilders
         );
     }
 
     private static void GenerateSourceForStepwiseBuilders(
         SourceProductionContext context,
-        (BuilderInfo BuilderInfo, ImmutableArray<ExtendedBuilderInfo> ExtendedBuilderInfos) generationData)
+        BuilderInfo builderInfo)
     {
-        // Deconstruct the tuple for clarity
-        var (builderInfo, extendedBuilderInfos) = generationData;
-
         // Extract the builder-to-extend name if any side-path is configured
         var builderToExtendName = builderInfo.SidePath?.BaseBuilderName;
 
         // Start with the usings from the original info
-        var finalUsings = (builderInfo.Usings ?? Array.Empty<string>().ToEquatableArray()).Prepend("using System;")
+        var finalUsings = (builderInfo.Usings ?? Enumerable.Empty<string>()).Prepend("using System;")
             .Distinct();
-
-        // If there's a matching extended builder, append its namespace and unify with existing usings
-        if (extendedBuilderInfos.FirstOrDefault(e => e?.ClassName == builderToExtendName) is { } matchingExtension)
-        {
-            finalUsings = finalUsings
-                .Append($"using {matchingExtension.DeclaredNamespace};")
-                .Union(matchingExtension.Usings!)
-                .Distinct()
-                .ToEquatableArray();
-        }
 
         // Pull out the main elements
         var targetType = builderInfo.TargetTypeName;
@@ -458,7 +389,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         if (steps.Any(s => s.DefaultValueFactory is not null))
         {
             var stepsWithDefaultValueFactories =
-                new LinkedList<StepInfo>(steps.Where(s => s.DefaultValueFactory is not null).OrderBy(s => s.Order));
+                new LinkedList<StepInfo>(steps.Where(static s => s.DefaultValueFactory is not null)
+                    .OrderBy(static s => s.Order));
             var extensionClassName = $"Init{className}Extensions";
 
             sourceBuilder.Append($$"""
@@ -486,7 +418,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                 // 10.1) contiguous defaults from here
                 var defaultsRun = stepsArray
                     .Skip(start)
-                    .TakeWhile(s => s.DefaultValueFactory is not null)
+                    .TakeWhile(static s => s.DefaultValueFactory is not null)
                     .ToArray();
 
                 // 10.2) if we have more than one default, allow SkipTo for each later default
@@ -500,7 +432,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         var chain = string.Concat(
                             defaultsRun
                                 .TakeWhile(s => s.Order < target.Order)
-                                .Select(s => $".{s.StepName}()")
+                                .Select(static s => $".{s.StepName}()")
                         );
 
                         sourceBuilder.Append($$"""

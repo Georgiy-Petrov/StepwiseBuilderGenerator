@@ -1,36 +1,34 @@
-# Stepwise Builder Generator
+---
 
-A lightweight C# source generator that produces strongly-typed, stepwise “fluent” builders. Simply annotate a class and describe its steps; the generator emits interfaces and a partial class to guide callers through each required step.
+# Stepwise Builder Generator 🚀
+
+Lightweight, compile-time-safe C# source generator for fluent stepwise builders.  
+Forces correct data collection without runtime cost or reflection.
+
+[![NuGet](https://img.shields.io/nuget/v/StepwiseBuilderGenerator.svg?logo=nuget)](https://www.nuget.org/packages/StepwiseBuilderGenerator)
 
 ---
 
-## Features
+## ✨ Overview
 
-- **`AddStep<T>(stepName, fieldName = null)`**  
-  Define each required input in order.
+Building complex objects safely often requires enforcing a strict order of steps.  
+**Stepwise Builder Generator** produces fluent builder APIs automatically from simple annotations.
 
-- **Default-value support**  
-  Supply a factory for a step so callers can use `.StepName()` with no arguments.
+It generates strongly-typed interfaces, fields, default values, and overloads,  
+ensuring you can't forget required data or call steps out of order.
 
-- **`AndOverload<TSource, TValue>(mapper)`**  
- Define one or more overloads on a step so callers can pass in a different source type—which your `mapper` function will translate into the required parameter type.  
+You retain full control over how the final object is built — the Build method always delegates to your provided logic.
+You define exactly how the collected data is transformed, allowing uses beyond object construction,  
+such as building complex data pipelines, aggregators, or workflows.
 
-- **`BranchFrom(baseBuilder, baseStep)`**  
-  Insert an alternate path from one builder into another.
-
-- **Enum of steps**  
-  Every generated builder includes `enum Steps { … }` for logging or reflection.
-
-- **Static factories**  
-  `StepwiseBuilders.YourBuilder()` to kick off a chain.
+No runtime reflection. No manual boilerplate.
 
 ---
 
-## Examples
+## 🚀 Quick Start
 
-### 1. Basic builder  
+Define your target type:
 
-**Target type**:
 ```csharp
 public class Order
 {
@@ -40,7 +38,8 @@ public class Order
 }
 ```
 
-**Builder declaration**:
+Create a builder:
+
 ```csharp
 [StepwiseBuilder]
 public partial class OrderBuilder
@@ -48,42 +47,56 @@ public partial class OrderBuilder
     public OrderBuilder()
     {
         GenerateStepwiseBuilder
-            .AddStep<int>("SetId",    "Id")
+            .AddStep<int>("SetId", "Id")
             .AddStep<string>("SetCustomer")
             .AddStep<decimal>("SetTotal")
-            .CreateBuilderFor<Order>();
+            .CreateBuilderFor<Order>(b => new Order
+            {
+                Id = b.Id,
+                Customer = b.SetCustomerValue,
+                Total = b.SetTotalValue
+            });
     }
 }
 ```
 
-**Usage**:
+Use it:
+
 ```csharp
 var order = StepwiseBuilders.OrderBuilder()
-    .SetId(123)
+    .SetId(1001)
     .SetCustomer("Acme Co.")
-    .SetTotal(99.95m)
-    .Build(b => new Order
-    {
-        Id       = b.Id,
-        Customer = b.SetCustomerValue,
-        Total    = b.SetTotalValue
-    });
+    .SetTotal(250.75m)
+    .Build();
 ```
 
 ---
 
-### 2. Default-value steps  
+## 🛠️ Key Features
 
-**Target type**:
+- **Stepwise typing:** Force caller to supply each field in order
+- **Default values:** Define steps with default factories
+- **Overloads:** Accept alternative types with mapping
+- **Branching:** Extend another builder at a specific step
+- **Static factories:** Entry points like `StepwiseBuilders.OrderBuilder()`
+- **Enum of steps:** Generated `Steps` enum for diagnostics or logging
+- **User-defined Build:** You fully control how data is assembled
+- **Zero runtime cost:** Pure compile-time source generation
+
+---
+
+## 📚 Examples
+
+### 1️⃣ Default-Value Step
+
 ```csharp
 public class ReportConfig
 {
-    public string Title        { get; init; }
-    public bool   IncludeCharts{ get; init; }
+    public string Title { get; init; }
+    public bool IncludeCharts { get; init; }
 }
 ```
 
-**Builder declaration**:
 ```csharp
 [StepwiseBuilder]
 public partial class ReportConfigBuilder
@@ -92,30 +105,58 @@ public partial class ReportConfigBuilder
     {
         GenerateStepwiseBuilder
             .AddStep<string>("WithTitle")
-            .AddStep<bool>("IncludeCharts", defaultValueFactory: () => true)
-            .CreateBuilderFor<ReportConfigBuilder, ReportConfig>(b => new ReportConfig
+            .AddStep<bool>("IncludeCharts", () => true)
+            .CreateBuilderFor<ReportConfig>(b => new ReportConfig
             {
-                Title         = b.WithTitleValue,
+                Title = b.WithTitleValue,
                 IncludeCharts = b.IncludeChartsValue
             });
     }
 }
 ```
 
-**Usage**:
+Usage:
+
 ```csharp
-// uses default IncludeCharts = true
-var config = StepwiseBuilders.ReportConfigBuilder()
-    .WithTitle("Q1 Results")
-    .IncludeCharts()   // no arg → defaultValueFactory invoked
-    .Build();          // no arg → defaultValueFactory invoked
+var report = StepwiseBuilders.ReportConfigBuilder()
+    .WithTitle("Annual Report")
+    .IncludeCharts() // uses default true
+    .Build();        // uses provided Build factory
 ```
 
 ---
 
-### 3. Branching between builders  
+### 2️⃣ Overload Mapping
 
-**Base builder** (`UserBuilder`):
+```csharp
+[StepwiseBuilder]
+public partial class SimpleBuilder
+{
+    public SimpleBuilder()
+    {
+        GenerateStepwiseBuilder
+            .AddStep<int>("SetValue")
+            .AndOverload<string, int>(valueAsString => int.Parse(valueAsString))
+            // or int.Parse could be used directly as delegate.
+            .CreateBuilderFor<int>();
+    }
+}
+```
+
+Usage:
+
+```csharp
+var value = StepwiseBuilders.SimpleBuilder()
+    .SetValue("123")  // maps string to int
+    .Build(b => b.SetValueValue);
+```
+
+---
+
+### 3️⃣ Branching Between Builders
+
+Base builder:
+
 ```csharp
 [StepwiseBuilder]
 public partial class UserBuilder
@@ -130,7 +171,8 @@ public partial class UserBuilder
 }
 ```
 
-**Branching builder** (`VipUserBuilder`):
+Branching builder:
+
 ```csharp
 [StepwiseBuilder]
 public partial class VipUserBuilder
@@ -138,72 +180,51 @@ public partial class VipUserBuilder
     public VipUserBuilder()
     {
         GenerateStepwiseBuilder
-            .BranchFrom("UserBuilder", "SetAge")
+            .BranchFrom<UserBuilder>("SetAge")
             .AddStep<string>("SetMembershipLevel")
             .CreateBuilderFor<VipUser>();
     }
 }
 ```
 
-**Usage**:
-```csharp
-// regular user
-var u1 = StepwiseBuilders.UserBuilder()
-    .SetName("Alice")
-    .SetAge(30)
-    .Build(b => new User
-    {
-        Name = b.SetNameValue,
-        Age = b.SetAgeValue
-    });
+Usage:
 
-// VIP user branches in after SetAge
-var vip = StepwiseBuilders.UserBuilder()
+```csharp
+var vipUser = StepwiseBuilders.UserBuilder()
     .SetName("Bob")
     .SetAge(45)
-    .SetMembershipLevel("Gold")
+    .SetMembershipLevel("Gold") //After SetAge(), control transfers into VipUserBuilder steps via extension method.
     .Build(b => new VipUser
     {
         Name = b.OriginalBuilder.SetNameValue,
         Age = b.OriginalBuilder.SetAgeValue,
-        SetMembershipLevel = b.SetMembershipLevelValue
+        MembershipLevel = b.SetMembershipLevelValue
     });
 ```
 
 ---
 
-### 4. Overload mappings with `AndOverload`
-**Builder declaration:**
-```csharp
-[StepwiseBuilder]
-public partial class SimpleBuilder
-{
-    public SimpleBuilder()
-     {
-        GenerateStepwiseBuilder
-            .AddStep<int>("SetValue")
-                .AndOverload<string, int>(s => int.Parse(s))
-            .CreateBuilderFor<int>();
-    }
-}
-```
-**Usage:**
-```csharp
-var result = StepwiseBuilders.SimpleBuilder()
-    //.SetValue(123)         // uses direct step with int
-    .SetValue("123")         // uses string→int mapper extension
-    .Build(b => b.SetValueValue);
-```
+## ❓ FAQ
+
+**Q: Can I inject dependencies into builders?**  
+A: Yes. Builders are partial classes. You can define additional constructors in another partial file.
+
+**Q: What happens if I omit `fieldName` in `AddStep()`?**  
+A: A field named `{StepName}Value` is automatically created.
+
+**Q: Can I customize the Build() process?**  
+A: Yes. You must define Build() logic. No Build method is auto-generated without your code.
+
+**Q: Can it be used for things beyond object construction?**  
+A: Absolutely. Builders can be used for data aggregation, pipelines, workflows, or any ordered data collection.
+
+**Q: Does this add any runtime cost?**  
+A: No. Everything happens at compile-time. No reflection or dynamic code at runtime.
 
 ---
 
-## FAQ
+## 📄 License
 
-**Q: Can I inject services or dependencies into a builder?**  
-A: Yes—since the generated builders are `partial` classes, you’re free to add your own constructor(s) (e.g. taking `ILogger`, `IRepository`, etc.) in another `partial` file. Dependency-injected fields or properties will be available when the step methods run.
+Licensed under the MIT License.
 
-**Q: What if I omit the `fieldName` in `AddStep`?**  
-A: A field named `{StepName}Value` is generated automatically.
-
-**Q: How do I supply custom “Build” logic?**  
-A: Call `.Build(instance => /* your mapping to target */)` or add extension methods on the final build interface for reusable patterns.
+---

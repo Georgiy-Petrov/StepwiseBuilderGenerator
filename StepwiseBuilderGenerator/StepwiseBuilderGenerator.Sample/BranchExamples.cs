@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using StepwiseBuilderGenerator.Sample;
 
 namespace StepwiseBuilderGenerator.Sample3
 {
@@ -21,7 +22,7 @@ namespace StepwiseBuilderGenerator.Sample3
         public SidePathFromFirstStepBuilder()
         {
             GenerateStepwiseBuilder
-                .BranchFrom("SimpleBuilder", "FirstStep")
+                .BranchFrom<SimpleBuilder>( "FirstStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -39,7 +40,7 @@ namespace StepwiseBuilderGenerator.Sample3
         public SidePathFromMiddleStepBuilder()
         {
             GenerateStepwiseBuilder
-                .BranchFrom("SimpleBuilder", "SecondStep")
+                .BranchFrom<SimpleBuilder>("SecondStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -53,14 +54,14 @@ namespace StepwiseBuilderGenerator.Sample3
     /// (no generics used here).
     /// </summary>
     [StepwiseBuilder]
-    public partial class GenericBaseSidePathBuilder<T1, T2, T3>
+    public partial class GenericBaseSidePathBuilder<T1, T2, T34>
         where T1 : Exception, IList<T1>
         where T2 : Sample.MockInterface
     {
         public GenericBaseSidePathBuilder()
         {
             GenerateStepwiseBuilder
-                .BranchFrom("MultiGenericParameterBuilder", "SecondStep")
+                .BranchFrom<MultiGenericParameterBuilder<T1, T2, T34>>("SecondStep")
                 .AddStep<int>("FirstStep")
                 .AddStep<string>("SecondStep")
                 .AddStep<object>("ThirdStep")
@@ -81,7 +82,7 @@ namespace StepwiseBuilderGenerator.Sample3
         public GenericSidePathWithGenericSteps()
         {
             GenerateStepwiseBuilder
-                .BranchFrom("MultiGenericParameterBuilder", "SecondStep")
+                .BranchFrom<MultiGenericParameterBuilder<T1, T2, T3>>("SecondStep")
                 // Use T, T1 as the step types
                 .AddStep<T1>("FirstStep")
                 .AddStep<T2>("SecondStep")
@@ -102,7 +103,7 @@ namespace StepwiseBuilderGenerator.Sample3
         public BranchFromLastStepBuilder()
         {
             GenerateStepwiseBuilder
-                .BranchFrom("SimpleBuilder", "ThirdStep")
+                .BranchFrom<SimpleBuilder>("ThirdStep")
                 .AddStep<int>("AlternateStep")
                 .CreateBuilderFor<string>();
         }
@@ -120,7 +121,7 @@ namespace StepwiseBuilderGenerator.Sample3
         public SidePathWithDuplicateStepName()
         {
             GenerateStepwiseBuilder
-                .BranchFrom("SimpleBuilder", "SecondStep")
+                .BranchFrom<SimpleBuilder>("SecondStep")
                 // Reusing the same step name 'SecondStep' right after branching
                 .AddStep<int>("SecondStep")
                 .AddStep<object>("ThirdStep")
