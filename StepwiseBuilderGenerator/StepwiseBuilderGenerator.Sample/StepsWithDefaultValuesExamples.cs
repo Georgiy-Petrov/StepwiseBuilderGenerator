@@ -183,15 +183,17 @@ public partial class StepsWithDefaultValuesSkipToNamedOverloadExample
         GenerateStepwiseBuilder
             .AddStep<int>("SetAge")
             .AddStep<string>("SetName", "Name", () => "John")
-            .AddStep<string>("SetLastName", defaultValueFactory: () => "John")
-            .AddStep<int>("SetYear")
+            .AddStep<string>("SetLastName", defaultValueFactory: () => "John123")
+            .AddStep<int>("SetYear", defaultValueFactory: () => 42)
             .AndOverload<string, int>(i => int.Parse(i), "SetStringYear")
             .CreateBuilderFor<string>();
     }
 
     public void Test()
     {
-        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToSetStringYear("321");
+        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToSetYear(123);
+        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToSetStringYear("123");
+        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToBuild(default);
     }
 }
 

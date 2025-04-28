@@ -457,6 +457,29 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                                    }
 
                                                """);
+                        
+                        if (builderInfo.StepInfosOverloads is not null)
+                        {
+                            var stepInfoOverloads = builderInfo.StepInfosOverloads.Value
+                                .Where(sio => sio.StepName == target.StepName).ToList();
+
+                            foreach (var stepOverload in stepInfoOverloads)
+                            {
+                                var stepName = stepOverload.OverloadMethodName ?? stepOverload.StepName;
+                                var @params = $"{stepOverload.ParameterType} value";
+
+                                sourceBuilder.Append($$"""
+                                                       
+                                                           public static {{targetIface}} SkipTo{{stepName}}{{genericParams}}(
+                                                               this {{sourceIface}} step, {{@params}}
+                                                           ) {{constraints}}
+                                                           {
+                                                               return step{{chain}}.{{stepName}}(value);
+                                                           }
+
+                                                       """);
+                            }
+                        }
                     }
                 }
 
