@@ -10,8 +10,8 @@ public partial class BuildWithDefaultValuesSimpleExample
         GenerateStepwiseBuilder
             .AddStep<int>("SetAge")
             .AddStep<string>("SetName", "Name", () => "John")
-            .AddStep<string>("SetLastName")
-            .CreateBuilderFor<BuildWithDefaultValuesSimpleExample, string>(b => b.Name);
+            .AddStep<string>("SetLastName");
+        //.CreateBuilderFor<BuildWithDefaultValuesSimpleExample, string>(b => b.Name);
     }
 }
 
@@ -20,9 +20,9 @@ public partial class BuildWithDefaultValuesAsOnlyCallExample
 {
     public BuildWithDefaultValuesAsOnlyCallExample()
     {
-        GenerateStepwiseBuilder
-            .AddStep<string>("SetName", "Name", () => "John")
-            .CreateBuilderFor<BuildWithDefaultValuesAsOnlyCallExample, string>(b => b.Name);
+        // GenerateStepwiseBuilder
+        //     .AddStep<string>("SetName", "Name", () => "John")
+        //     .CreateBuilderFor<BuildWithDefaultValuesAsOnlyCallExample, string>(b => b.Name);
     }
 }
 
@@ -31,11 +31,11 @@ public partial class BuildWithDefaultValuesAsOnlySeveralCallsExample
 {
     public BuildWithDefaultValuesAsOnlySeveralCallsExample()
     {
-        GenerateStepwiseBuilder
-            .AddStep<string>("SetName", "Name", () => "John")
-            .AddStep<string>("SetLastName", "LastName", () => "Snow")
-            .AddStep<string>("SetTown", "Town", () => "Wall")
-            .CreateBuilderFor<BuildWithDefaultValuesAsOnlySeveralCallsExample, string>(b => b.Name);
+        // GenerateStepwiseBuilder
+        //     .AddStep<string>("SetName", "Name", () => "John")
+        //     .AddStep<string>("SetLastName", "LastName", () => "Snow")
+        //     .AddStep<string>("SetTown", "Town", () => "Wall")
+        //     .CreateBuilderFor<BuildWithDefaultValuesAsOnlySeveralCallsExample, string>(b => b.Name);
     }
 }
 
@@ -46,11 +46,11 @@ public partial class BuildWithDefaultValuesWithGenericExample<T, T1>
 {
     public BuildWithDefaultValuesWithGenericExample()
     {
-        GenerateStepwiseBuilder
-            .AddStep<string>("SetName", "Name", () => "John")
-            .AddStep<T>("SetLastName", "LastName", () => default)
-            .AddStep<string>("SetTown", "Town", () => "Wall")
-            .CreateBuilderFor<BuildWithDefaultValuesWithGenericExample<T, T1>, string>(b => b.Name);
+        // GenerateStepwiseBuilder
+        //     .AddStep<string>("SetName", "Name", () => "John")
+        //     .AddStep<T>("SetLastName", "LastName", () => default)
+        //     .AddStep<string>("SetTown", "Town", () => "Wall")
+        //     .CreateBuilderFor<BuildWithDefaultValuesWithGenericExample<T, T1>, string>(b => b.Name);
     }
 }
 
@@ -60,10 +60,10 @@ public partial class BuildWithDefaultValuesWithWrongBuilderTypeForDefaultValueFa
 {
     public BuildWithDefaultValuesWithWrongBuilderTypeForDefaultValueFactoryExample()
     {
-        GenerateStepwiseBuilder
-            .AddStep<string>("SetName", "Name", () => "John")
-            .AddStep<string>("SetLastName", "LastName", () => default)
-            .AddStep<string>("SetTown", "Town", () => "Wall")
-            .CreateBuilderFor<BuildWithDefaultValuesAsOnlySeveralCallsExample, string>(b => b.Name);
+        // GenerateStepwiseBuilder
+        //     .AddStep<string>("SetName", "Name", () => "John")
+        //     .AddStep<string>("SetLastName", "LastName", () => default)
+        //     .AddStep<string>("SetTown", "Town", () => "Wall")
+        //     .CreateBuilderFor<BuildWithDefaultValuesAsOnlySeveralCallsExample, string>(b => b.Name);
     }
 }

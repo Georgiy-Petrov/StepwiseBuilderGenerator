@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -110,6 +111,22 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                         .CollectMethodsInChain()
                         .Reverse() // ensure we process them in source order
                         .Where(static methodInfo => methodInfo.MethodName == "AddStep")
+                        .Where(static methodInfo => methodInfo.Arguments[ArgumentType.DefaultValueFactory] is null)
+                        .Select(static (methodInfo, i) => new StepInfo(
+                            Order: i,
+                            StepName: methodInfo.Arguments[ArgumentType.StepName]!,
+                            FieldName: methodInfo.Arguments[ArgumentType.FieldName],
+                            ParameterType: methodInfo.GenericArguments!.Value.GetArray()!.Single(),
+                            DefaultValueFactory: null))
+                        .OrderBy(static step => step.Order)
+                        .ToEquatableArray();
+
+                var addStepInvocationsWithDefaultValueFactory =
+                    invocation
+                        .CollectMethodsInChain()
+                        .Reverse() // ensure we process them in source order
+                        .Where(static methodInfo => methodInfo.MethodName == "AddStep")
+                        .Where(static methodInfo => methodInfo.Arguments[ArgumentType.DefaultValueFactory] is not null)
                         .Select(static (methodInfo, i) => new StepInfo(
                             Order: i,
                             StepName: methodInfo.Arguments[ArgumentType.StepName]!,
@@ -184,6 +201,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     Usings: usings,
                     TargetTypeName: targetType!,
                     StepMethods: addStepInvocations,
+                    StepMethodsWithDefaultValueFactory: addStepInvocationsWithDefaultValueFactory,
                     ClassName: className,
                     TypeParametersAndConstraints: classTypeParametersAndConstraints,
                     SidePath: sidePathForBuilders,
@@ -294,9 +312,40 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
 
                                """);
 
+        // Generate default values builder interface
+        var stepsWithDefaultValues = builderInfo.StepMethodsWithDefaultValueFactory?.GetArray();
+        var defaultValuesBuilderInterface = "";
+
+        if (stepsWithDefaultValues?.Length is not 0)
+        {
+            defaultValuesBuilderInterface = $"I{className}DefaultValuesBuilder{genericParams}";
+
+            sourceBuilder.Append($$"""
+                                   public interface {{defaultValuesBuilderInterface}} {{constraints}}
+                                   {
+                                   """);
+
+            foreach (var stepInfo in stepsWithDefaultValues)
+            {
+                sourceBuilder.Append($$"""
+                                       
+                                           {{defaultValuesBuilderInterface}} {{stepInfo.StepName}}({{stepInfo.ParameterType}} value);
+
+                                       """);
+            }
+
+            sourceBuilder.Append($$"""
+                                       {{interfaceNames[0]}} ReturnToMainBuilder();
+                                   }
+
+                                   """);
+        }
+
+
         // 4) Generate the partial class that implements all step-interfaces + the build-interface
         sourceBuilder.Append($$"""
-                               public partial class {{className}}{{genericParams}} : {{string.Join(",", interfaceNames)}} {{constraints}}
+
+                               public partial class {{className}}{{genericParams}} : {{string.Join(", ", interfaceNames.Append(defaultValuesBuilderInterface)).TrimEnd(',', ' ')}} {{constraints}}
                                {
                                """);
 
@@ -315,7 +364,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
         }
 
         // 5) Generate fields for each step
-        foreach (var stepInfo in stepsArray)
+        foreach (var stepInfo in stepsArray.Concat(builderInfo.StepMethodsWithDefaultValueFactory ?? []))
         {
             var fieldName = stepInfo.FieldName ?? $"{stepInfo.StepName}Value";
             sourceBuilder.AppendLine($"\n    public {stepInfo.ParameterType} {fieldName};");
@@ -340,15 +389,67 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                    """);
         }
 
-        // 7) Implement the Build method
+        //7) Implement steps with default values
+        foreach (var stepWithDefaultValue in stepsWithDefaultValues)
+        {
+            var fieldName = stepWithDefaultValue.FieldName ?? $"{stepWithDefaultValue.StepName}Value";
+
+            sourceBuilder.Append($$"""
+                                       public {{defaultValuesBuilderInterface}} {{stepWithDefaultValue.StepName}}({{stepWithDefaultValue.ParameterType}} value)
+                                       {
+                                           {{fieldName}} = value;
+                                           return this;
+                                       }
+
+                                   """);
+        }
+
+        // 8) Implement the Build method
         sourceBuilder.Append($$"""
                                    public {{targetType}} Build(Func<{{className}}{{genericParams}}, {{targetType}}> buildFunc)
                                    {
                                        return buildFunc(this);
                                    }
+                                   
                                """);
 
-        // 8) Include an enum of steps
+
+        // 9) Implement Return to main builder
+        sourceBuilder.Append($$"""
+                               
+                                   public {{interfaceNames[0]}} ReturnToMainBuilder()
+                                   {
+                                       return ({{interfaceNames[0]}})this;
+                                   }
+                                   
+                               """);
+
+        // 9) Implement Initialize
+        var defaultValuesFactoriesVariables = string.Join("\n",
+            stepsWithDefaultValues.Select(s =>
+                $"        Func<{s.ParameterType}> {s.StepName}DefaultValueFactory = {s.DefaultValueFactory};"));
+        var defaultValuesFactoriesCallChain = "." + string.Join(".",
+            stepsWithDefaultValues.Select(s => $"{s.StepName}({s.StepName}DefaultValueFactory())"));
+
+        if (defaultValuesFactoriesCallChain == ".")
+        {
+            defaultValuesFactoriesCallChain = "";
+        }
+
+        sourceBuilder.Append($$"""
+                               
+                                   public {{interfaceNames[0]}} Initialize()
+                                   {
+                                       var builder = new {{className}}{{genericParams}}();
+                                    
+                               {{defaultValuesFactoriesVariables}}
+                                    
+                                       return ({{interfaceNames[0]}})builder{{defaultValuesFactoriesCallChain}};
+                                   }
+                                   
+                               """);
+
+        // 10) Include an enum of steps
         sourceBuilder.Append($$"""
                                
                                    public enum Steps
@@ -373,214 +474,36 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             var returnType = interfaceNames[0];
 
             sourceBuilder.Append($$"""
-                                   
+
                                    public static partial class StepwiseBuilders
                                    {
                                        public static {{returnType}} {{className}}{{genericParams}}() {{constraints}}
                                        {
-                                            return new {{className}}{{genericParams}}();
+                                            return new {{className}}{{genericParams}}().Initialize();
                                        }
                                    }
 
                                    """);
         }
 
-        // 10) If steps have default value factories, generate appropriate extension methods
-        if (steps.Any(s => s.DefaultValueFactory is not null))
+        //10) If Build has default value factory, generate appropriate extension method
+        if (stepsWithDefaultValues.Length is not 0)
         {
-            var stepsWithDefaultValueFactories =
-                new LinkedList<StepInfo>(steps.Where(static s => s.DefaultValueFactory is not null)
-                    .OrderBy(static s => s.Order));
             var extensionClassName = $"Init{className}Extensions";
 
             sourceBuilder.Append($$"""
 
                                    public static partial class {{extensionClassName}}
                                    {
+                                       public static {{defaultValuesBuilderInterface}} SetDefaults{{genericParams}}(this {{interfaceNames[0]}} step) {{constraints}}
+                                       {
+                                           return ({{defaultValuesBuilderInterface}})step;
+                                       }
+                                   }
                                    """);
-
-            var currentStep = stepsWithDefaultValueFactories.First;
-
-            while (currentStep is not null)
-            {
-                var stepInterface = interfaceNames[currentStep.Value.Order];
-                
-                if (builderToExtendName is not null && currentStep.Value.Order == 0)
-                {
-                    stepInterface = $"I{builderToExtendName}{builderInfo.SidePath!.BaseBuilderStep}";
-                }
-                
-                sourceBuilder.Append($$"""
-                                       
-                                           public static {{interfaceNames[currentStep.Value.Order + 1]}} {{currentStep.Value.StepName}}{{genericParams}}(this {{stepInterface}} step) {{constraints}}
-                                           {
-                                               Func<{{currentStep.Value.ParameterType}}> valueFactory = {{currentStep.Value.DefaultValueFactory}};
-                                               return step.{{currentStep.Value.StepName}}(valueFactory());
-                                           }
-
-                                       """);
-
-                var start = currentStep.Value.Order;
-
-                // 10.1) contiguous defaults from here
-                var defaultsRun = stepsArray
-                    .Skip(start)
-                    .TakeWhile(static s => s.DefaultValueFactory is not null)
-                    .ToArray();
-
-                // 10.2) if we have more than one default, allow SkipTo for each later default
-                if (defaultsRun.Length > 1)
-                {
-                    var sourceIface = interfaceNames[start];
-                    
-                    if (builderToExtendName is not null && currentStep.Value.Order == 0)
-                    {
-                        sourceIface = $"I{builderToExtendName}{builderInfo.SidePath!.BaseBuilderStep}";
-                    }
-
-                    foreach (var target in defaultsRun.Skip(1))
-                    {
-                        var targetIface = interfaceNames[target.Order + 1]; // after that step
-                        var chain = string.Concat(
-                            defaultsRun
-                                .TakeWhile(s => s.Order < target.Order)
-                                .Select(static s => $".{s.StepName}()")
-                        );
-
-                        sourceBuilder.Append($$"""
-                                               
-                                                   public static {{targetIface}} SkipTo{{target.StepName}}{{genericParams}}(
-                                                       this {{sourceIface}} step, {{target.ParameterType}} value
-                                                   ) {{constraints}}
-                                                   {
-                                                       return step{{chain}}.{{target.StepName}}(value);
-                                                   }
-
-                                               """);
-                        
-                        if (builderInfo.StepInfosOverloads is not null)
-                        {
-                            var stepInfoOverloads = builderInfo.StepInfosOverloads.Value
-                                .Where(sio => sio.StepName == target.StepName).ToList();
-
-                            foreach (var stepOverload in stepInfoOverloads)
-                            {
-                                var stepName = stepOverload.OverloadMethodName ?? stepOverload.StepName;
-                                var @params = $"{stepOverload.ParameterType} value";
-
-                                sourceBuilder.Append($$"""
-                                                       
-                                                           public static {{targetIface}} SkipTo{{stepName}}{{genericParams}}(
-                                                               this {{sourceIface}} step, {{@params}}
-                                                           ) {{constraints}}
-                                                           {
-                                                               return step{{chain}}.{{stepName}}(value);
-                                                           }
-
-                                                       """);
-                            }
-                        }
-                    }
-                }
-
-                // 10.3) now compute “next” target (either a real step, or Build if we ran out)
-                if (defaultsRun.Length > 0)
-                {
-                    var sourceIface = interfaceNames[start];
-                    var nextIndex = start + defaultsRun.Length;
-                    string nextName;
-                    string nextParams;
-                    string nextCall;
-                    string returnIface;
-                    
-                    if (builderToExtendName is not null && currentStep.Value.Order == 0)
-                    {
-                        sourceIface = $"I{builderToExtendName}{builderInfo.SidePath!.BaseBuilderStep}{genericParams}";
-                    }
-
-                    if (nextIndex < stepsArray.Length)
-                    {
-                        // the next non-default step
-                        var nextStep = stepsArray[nextIndex];
-                        nextName = nextStep.StepName;
-                        nextParams = $"{nextStep.ParameterType} value";
-                        nextCall = $".{nextName}(value)";
-                        returnIface = interfaceNames[nextIndex + 1];
-                    }
-                    
-                    else
-                    {
-                        // no steps left → Build
-                        nextName = "Build";
-                        nextParams = $"Func<{className}{genericParams}, {targetType}> buildFunc";
-                        nextCall = ".Build(buildFunc)";
-                        returnIface = targetType; // I{Class}Build<…>
-                    }
-
-                    // chain _all_ defaults so far
-                    var chainAll = string.Concat(defaultsRun.Select(s => $".{s.StepName}()"));
-
-                    sourceBuilder.Append($$"""
-                                           
-                                               public static {{returnIface}} SkipTo{{nextName}}{{genericParams}}(
-                                                   this {{sourceIface}} step,
-                                                   {{nextParams}}
-                                               ) {{constraints}}
-                                               {
-                                                   return step{{chainAll}}{{nextCall}};
-                                               }
-
-                                           """);
-
-                    if (builderInfo.StepInfosOverloads is not null)
-                    {
-                        var stepInfoOverloads = builderInfo.StepInfosOverloads.Value
-                            .Where(sio => sio.StepName == nextName).ToList();
-
-                        foreach (var stepOverload in stepInfoOverloads)
-                        {
-                            nextName = stepOverload.OverloadMethodName ?? stepOverload.StepName;
-                            nextParams = $"{stepOverload.ParameterType} value";
-                            nextCall = $".{nextName}(value)";
-
-                            sourceBuilder.Append($$"""
-                                                   
-                                                       public static {{returnIface}} SkipTo{{nextName}}{{genericParams}}(
-                                                           this {{sourceIface}} step,
-                                                           {{nextParams}}
-                                                       ) {{constraints}}
-                                                       {
-                                                           return step{{chainAll}}{{nextCall}};
-                                                       }
-
-                                                   """);
-                        }
-                    }
-
-                    if (createBuilderInfoDefaultValueFactory is not null && nextName == "Build")
-                    {
-                        sourceBuilder.Append($$"""
-                                               
-                                                   public static {{returnIface}} SkipTo{{nextName}}{{genericParams}}(
-                                                       this {{sourceIface}} step
-                                                   ) {{constraints}}
-                                                   {
-                                                       return step{{chainAll}}.Build();
-                                                   }
-
-                                               """);
-                    }
-                }
-
-                currentStep = currentStep.Next;
-            }
-
-            sourceBuilder.Append("""
-                                 }
-                                 """);
         }
 
-        //11) If Build has default value factory, generate appropriate extension method
+        //10) If Build has default value factory, generate appropriate extension method
         if (createBuilderInfoDefaultValueFactory is not null)
         {
             var extensionClassName = $"Init{className}Extensions";
@@ -598,8 +521,8 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                    """);
         }
 
-        // 12) If this builder extends another, generate an extension method to jump into the new builder
-        if (builderToExtendName is not null)
+        // 11) If this builder extends another, generate an extension method to jump into the new builder
+        if (builderToExtendName is not null && stepsArray.Length is not 0)
         {
             var firstStepInfo = stepsArray[0];
             var extensionClassName = $"Init{className}Extensions";
@@ -608,7 +531,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
             var extensionReturn = interfaceNames[1];
 
             sourceBuilder.Append($$"""
-                                   
+
                                    public static partial class {{extensionClassName}}
                                    {
                                        public static {{extensionReturn}} {{firstStepInfo.StepName}}{{genericParams}}(
@@ -624,7 +547,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                    """);
         }
 
-        // 13) If this builder has AndOverload, generate an extension methods with overloads for steps
+        // 12) If this builder has AndOverload, generate an extension methods with overloads for steps
         if (builderInfo.StepInfosOverloads is not null)
         {
             var extensionClassName = $"Init{className}Extensions";
@@ -635,7 +558,9 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                    {
                                    """);
 
-            foreach (var stepOverload in builderInfo.StepInfosOverloads)
+            foreach (var stepOverload in builderInfo.StepInfosOverloads?.Where(sio =>
+                         !builderInfo.StepMethodsWithDefaultValueFactory?.Any(si => si.StepName == sio.StepName) ??
+                         true) ?? [])
             {
                 var stepInfo = stepsArray.First(s => s.StepName == stepOverload.StepName);
                 var stepInterface = interfaceNames[stepInfo.Order];
@@ -662,13 +587,34 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                        """);
             }
 
+            foreach (var stepOverload in builderInfo.StepInfosOverloads?.Where(sio =>
+                         builderInfo.StepMethodsWithDefaultValueFactory?.Any(si => si.StepName == sio.StepName) ??
+                         false) ?? [])
+            {
+                var stepInfo = stepsWithDefaultValues.First(s => s.StepName == stepOverload.StepName);
+                var overloadName = stepOverload.OverloadMethodName ?? stepInfo.StepName;
+
+                sourceBuilder.Append($$"""
+                                           
+                                           public static {{defaultValuesBuilderInterface}} {{overloadName}}{{genericParams}}(
+                                               this {{defaultValuesBuilderInterface}} originalStep,
+                                               {{stepOverload.ParameterType}} value
+                                           ) {{constraints}}
+                                           {
+                                               Func<{{stepOverload.ParameterType}}, {{stepOverload.ReturnType}}> mapper = {{stepOverload.Mapper}};
+                                               return originalStep.{{stepInfo.StepName}}(mapper(value));
+                                           }
+                                           
+                                       """);
+            }
+
             sourceBuilder.Append($$"""
-                                   
+
                                    }
                                    """);
         }
 
-        // 14) Finally, add the generated code to the compilation
+        // 13) Finally, add the generated code to the compilation
         var hintName = $"{className}.g.cs";
         context.AddSource(hintName, sourceBuilder.ToString());
     }

@@ -143,7 +143,7 @@ public partial class OverloadsInBranchCallExample
     public void Test()
     {
         // SetAddress with int parameter is accessible 
-        StepwiseBuilders.SimpleOverloadExample().SetId(123).SetAddress(123).SetAddress1("").Build(default);
+        //StepwiseBuilders.SimpleOverloadExample().SetId(123).SetAddress(123).SetAddress1("").Build(default);
     }
 }
 
@@ -161,7 +161,7 @@ public partial class OverloadWithNewNameExample
     }
     public void Test()
     {
-        StepwiseBuilders.OverloadWithNewNameExample().SetIdFromString("123");
+        //StepwiseBuilders.OverloadWithNewNameExample().SetIdFromString("123");
     }
 }
 

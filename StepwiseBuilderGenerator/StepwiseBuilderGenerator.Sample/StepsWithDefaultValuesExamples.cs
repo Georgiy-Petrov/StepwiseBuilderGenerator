@@ -125,7 +125,7 @@ public partial class StepsWithDefaultValuesNavigationBetweenStepsWithDefaultValu
 
     public void Test()
     {
-        StepwiseBuilders.StepsWithDefaultValuesNavigationBetweenStepsWithDefaultValuesExample().SkipToBuild();
+        //StepwiseBuilders.StepsWithDefaultValuesNavigationBetweenStepsWithDefaultValuesExample().SkipToBuild();
     }
 }
 
@@ -191,9 +191,9 @@ public partial class StepsWithDefaultValuesSkipToNamedOverloadExample
 
     public void Test()
     {
-        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToSetYear(123);
-        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToSetStringYear("123");
-        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToBuild(default);
+        // StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToSetYear(123);
+        // StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToSetStringYear("123");
+        // StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SkipToBuild(default);
     }
 }
 
@@ -204,7 +204,7 @@ public partial class StepsWithDefaultValuesSkipToNamedOverloadInBranchExample
     public StepsWithDefaultValuesSkipToNamedOverloadInBranchExample()
     {
         GenerateStepwiseBuilder
-            .BranchFrom<StepsWithDefaultValuesSkipToNamedOverloadExample>("SetLastName")
+            .BranchFrom<StepsWithDefaultValuesSkipToNamedOverloadExample>("SetAge")
             .AddStep<int>("SetAge1", defaultValueFactory: () => 42)
             .AddStep<int>("SetAge2", defaultValueFactory: () => 42)
             .AddStep<int>("SetAge3", defaultValueFactory: () => 42)
@@ -219,10 +219,12 @@ public partial class StepsWithDefaultValuesSkipToNamedOverloadInBranchExample
         Func<StepsWithDefaultValuesSkipToNamedOverloadInBranchExample, int>
             buildFunc = b => 42; 
         
-        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample()
-            .SetAge(123)
-            .SetName()
-            .SkipToBuild(buildFunc);
+         StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample()
+             .SetDefaults()
+             .SetName("123")
+             .ReturnToMainBuilder()
+             .SetAge(123);
+             //.Build(buildFunc);
     }
 }
 
@@ -233,13 +235,14 @@ public partial class StepsWithDefaultValuesInBranchFirstStepExample
     public StepsWithDefaultValuesInBranchFirstStepExample()
     {
         GenerateStepwiseBuilder
-            .BranchFrom<StepsWithDefaultValuesSkipToNamedOverloadExample>("SetLastName")
+            .BranchFrom<StepsWithDefaultValuesSkipToNamedOverloadExample>("SetAge")
             .AddStep<int>("SetAgeWithDefault", defaultValueFactory: () => 42)
+            .AddStep<int>("SetAgeWithDefault1")
             .CreateBuilderFor<string>();
     }
 
     public void Test()
     {
-        StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAge(123).SetName().SetAgeWithDefault();
+        //StepwiseBuilders.StepsWithDefaultValuesSkipToNamedOverloadExample().SetAgeWithDefault1(123).SetName().SetAgeWithDefault();
     }
 }
