@@ -255,6 +255,12 @@ namespace StepwiseBuilderGenerator.Sample
                 .AddStep<string>("ParamSecondStep")
                 .CreateBuilderFor<string>();
         }
+
+        public void Test()
+        {
+            StepwiseBuilders.ParameterizedAndParameterlessBuilder();
+            StepwiseBuilders.ParameterizedAndParameterlessBuilder(1, "123");
+        }
     }
 
     /// <summary>

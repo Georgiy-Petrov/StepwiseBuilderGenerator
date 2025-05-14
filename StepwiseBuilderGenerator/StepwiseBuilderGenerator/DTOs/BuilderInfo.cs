@@ -5,6 +5,7 @@ namespace StepwiseBuilderGenerator.DTOs;
 internal record BuilderInfo(
     EquatableArray<string>? Usings,
     string TargetTypeName,
+    EquatableArray<EquatableArray<string>> ContainingTypeConstructorsParameters,
     EquatableArray<StepInfo> StepMethods,
     EquatableArray<StepInfo>? StepMethodsWithDefaultValueFactory,
     string ClassName,
@@ -17,6 +18,7 @@ internal record BuilderInfo(
     public string DeclaredNamespace { get; } = DeclaredNamespace;
     public EquatableArray<string>? Usings { get; } = Usings;
     public string TargetTypeName { get; } = TargetTypeName;
+    public EquatableArray<EquatableArray<string>> ContainingTypeConstructorsParameters { get; } = ContainingTypeConstructorsParameters;
     public EquatableArray<StepInfo> StepMethods { get; } = StepMethods;
     public EquatableArray<StepInfo>? StepMethodsWithDefaultValueFactory { get; } = StepMethodsWithDefaultValueFactory;
     public EquatableArray<StepInfoOverloadInfo>? StepInfosOverloads { get; } = StepInfosOverloads;
