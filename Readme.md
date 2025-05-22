@@ -221,8 +221,9 @@ public partial class VipUserBuilder
     public VipUserBuilder()
     {
         GenerateStepwiseBuilder
-            // Branch from UserBuilder after its 'WithAge' input point
+            // Branch from UserBuilder after its 'WithName' input point
             .BranchFrom<UserBuilder>("WithAge")
+            .AddStep<int>("WithVipAge")
             .AddStep<string>("WithMembershipLevel") // Add VIP-specific input
             .CreateBuilderFor<VipUser>();
     }
@@ -231,14 +232,14 @@ public partial class VipUserBuilder
 // Usage:
 var vipUser = StepwiseBuilders.UserBuilder() // Start with the base process
     .WithName("Alice")
-    .WithAge(30)
-    // After .WithAge(), .WithMembershipLevel() becomes available,
+    // After .WithName(), .WithVipAge() and .WithMembershipLevel() becomes available,
     // transitioning to the VipUserBuilder flow.
+    .WithVipAge(30)
     .WithMembershipLevel("Gold")
     .Build(branchedBuilder => new VipUser // Your logic combines data from both
     {
         Name = branchedBuilder.OriginalBuilder.WithNameValue,
-        Age = branchedBuilder.OriginalBuilder.WithAgeValue,
+        Age = branchedBuilder.WithVipAgeValue,
         MembershipLevel = branchedBuilder.WithMembershipLevelValue
     });
 ```
@@ -284,12 +285,6 @@ public class SimplePoco
 [StepwiseBuilder]
 public partial class SimplePocoBuilder
 {
-    // A static factory method for the build logic
-    private static SimplePoco CreatePoco(SimplePocoBuilder builder)
-    {
-        return new SimplePoco { Name = builder.WithNameValue, Value = builder.WithValueValue };
-    }
-
     public SimplePocoBuilder()
     {
         GenerateStepwiseBuilder
@@ -298,11 +293,7 @@ public partial class SimplePocoBuilder
             // Provide the default build logic by passing a factory function to CreateBuilderFor.
             // The first generic argument <SimplePocoBuilder> matches this builder class,
             // enabling the parameterless .Build() extension.
-            .CreateBuilderFor<SimplePocoBuilder, SimplePoco>(CreatePoco);
-            // Alternatively, if the factory doesn't need the builder instance itself or if
-            // it's a simple lambda, you could also write:
-            // .CreateBuilderFor<SimplePoco>(builder => new SimplePoco { Name = builder.WithNameValue, Value = builder.WithValueValue });
-            // In this case (single generic arg), the generated extension also works.
+            .CreateBuilderFor<SimplePocoBuilder, SimplePoco>(b => new SimplePoco { Name = b.WithNameValue, Value = b.WithValueValue });
     }
 }
 
