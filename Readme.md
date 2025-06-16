@@ -112,9 +112,9 @@ The true power is in your hands: the final `.Build()` method receives all the co
 *   **Optional Inputs with Defaults:** Provide a factory function to `AddStep` to specify a default if an input isn't explicitly given.
 *   **Input Field Customization:** Optionally name the internal field for an input's value in `AddStep<TValue>("MethodName", "fieldName")`. Defaults to `MethodNameValue`.
 *   **Flexible Input Methods (Overloads):** Use `.AndOverload<TInput, TOriginalParam>(mapperFunc)` to offer alternative ways to supply data for a preceding input point, with automatic type mapping.
-*   **Composable Processes (Branching):** Use `.BranchFrom<BaseBuilder>("AtInputPointName")` to create a new guided process that extends or diverges from an existing one at a specific input collection point.
+*   **Composable Processes (Branching):** Use `.BranchFromStepBefore<BaseBuilder>("AtInputPointName")` to create a new guided process that extends or diverges from an existing one at a specific input collection point.
 *   **Generic Configurations & Constraints:** Define configuration classes with generic type parameters and constraints, which are propagated to the generated API.
-*   **Static Entry Points:** Root configurations (not using `BranchFrom`) get a static method in the `StepwiseBuilders` class (e.g., `StepwiseBuilders.YourBuilderName()`) to start the process.
+*   **Static Entry Points:** Root configurations (not using `BranchFromStepBefore`) get a static method in the `StepwiseBuilders` class (e.g., `StepwiseBuilders.YourBuilderName()`) to start the process.
 *   **User-Defined Final Action:**
     *   You *must* provide the logic for the final operation by passing a `Func<YourBuilder, YourTargetType>` to the `.Build(...)` call.
     *   Optionally, provide a default action factory to `CreateBuilderFor<YourBuilderType, YourTargetType>(yourDefaultFactory)` or `CreateBuilderFor<YourTargetType>(yourDefaultFactory)`. This can enable a parameterless `Build()` extension method.
@@ -125,16 +125,16 @@ The true power is in your hands: the final `.Build()` method receives all the co
 
 The core of defining a stepwise builder is through the fluent API starting with `GenerateStepwiseBuilder` inside your configuration class's constructor:
 
-| Method / Option                                        | Purpose                                                                                                                 |
-|:-------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------|
-| `AddStep<TValue>("MethodName")`                        | Defines a mandatory input point. Generates method `MethodName(TValue value)`. Value stored in `MethodNameValue`.        |
-| `AddStep<TValue>("MethodName", "fieldName")`           | Defines a mandatory input point. Generates method `MethodName(TValue value)`. Value stored in `{customFieldName}`.      |
-| `AddStep<TValue>(..., defaultValueFactory: () => ...)` | Defines an skippable input point with a default value factory if not explicitly set.                                    |
-| `AndOverload<TInput, TOriginalParam>(mapperFunc)`      | Adds an alternative input method for the preceding `AddStep`, mapping `TInput` to `TOriginalParam`.                     |
-| `AndOverload<..., TOriginalParam>("NewName", ...)`     | Same as above, but allows specifying a `NewName` for the overload method.                                               |
-| `BranchFrom<TBaseBuilder>("BaseStepName")`             | Starts a new guided path, branching off `TBaseBuilder` after its `BaseStepName` input point.                            |
-| `CreateBuilderFor<TTarget>()`                          | Finalizes the configuration, specifying `TTarget` as the outcome type. Requires a `Build(Func<...>)` call.              |
-| `CreateBuilderFor<TBuilder, TTarget>(factory)`         | Finalizes configuration, providing a default factory for a parameterless `Build()` if `TBuilder` matches current class. |
+| Method / Option                                                 | Purpose                                                                                                                 |
+|:----------------------------------------------------------------|:------------------------------------------------------------------------------------------------------------------------|
+| `AddStep<TValue>("MethodName")`                                 | Defines a mandatory input point. Generates method `MethodName(TValue value)`. Value stored in `MethodNameValue`.        |
+| `AddStep<TValue>("MethodName", "fieldName")`                    | Defines a mandatory input point. Generates method `MethodName(TValue value)`. Value stored in `{customFieldName}`.      |
+| `AddStep<TValue>(..., defaultValueFactory: () => ...)`          | Defines an skippable input point with a default value factory if not explicitly set.                                    |
+| `AndOverload<TInput, TOriginalParam>(mapperFunc)`               | Adds an alternative input method for the preceding `AddStep`, mapping `TInput` to `TOriginalParam`.                     |
+| `AndOverload<..., TOriginalParam>("NewName", ...)`              | Same as above, but allows specifying a `NewName` for the overload method.                                               |
+| `BranchFromStepBefore<TBaseBuilder>("BaseStepName")`            | Starts a new guided path, branching off `TBaseBuilder` before its `BaseStepName` input point.                           |
+| `CreateBuilderFor<TTarget>()`                                   | Finalizes the configuration, specifying `TTarget` as the outcome type. Requires a `Build(Func<...>)` call.              |
+| `CreateBuilderFor<TBuilder, TTarget>(factory)`                  | Finalizes configuration, providing a default factory for a parameterless `Build()` if `TBuilder` matches current class. |
 
 ---
 
@@ -221,8 +221,8 @@ public partial class VipUserBuilder
     public VipUserBuilder()
     {
         GenerateStepwiseBuilder
-            // Branch from UserBuilder after its 'WithName' input point
-            .BranchFrom<UserBuilder>("WithAge")
+            // Branch from UserBuilder before its 'WithAge' input point
+            .BranchFromStepBefore<UserBuilder>("WithAge")
             .AddStep<int>("WithVipAge")
             .AddStep<string>("WithMembershipLevel") // Add VIP-specific input
             .CreateBuilderFor<VipUser>();
@@ -232,7 +232,7 @@ public partial class VipUserBuilder
 // Usage:
 var vipUser = StepwiseBuilders.UserBuilder() // Start with the base process
     .WithName("Alice")
-    // After .WithName(), .WithVipAge() and .WithMembershipLevel() becomes available,
+    // Before .WithAge(), .WithVipAge() and .WithMembershipLevel() becomes available,
     // transitioning to the VipUserBuilder flow.
     .WithVipAge(30)
     .WithMembershipLevel("Gold")
@@ -335,7 +335,7 @@ A: No. All code (interfaces, partial classes, methods) is generated at compile-t
     *   The `defaultValueFactory` argument in `AddStep` (and mappers in `AndOverload`, and the default factory in `CreateBuilderFor`) are provided as C# code strings (e.g., `() => true`, `text => int.Parse(text)`).
     *   These strings are embedded directly into the generated code. They can access static members or, if they are instance methods/lambdas using `this` (e.g. `() => this.GetDefaultValue()`), instance members of your builder configuration class.
     *   They **cannot** close over local variables defined within the constructor where `GenerateStepwiseBuilder` is called. Syntax errors or incorrect scopes within these strings will result in compilation errors in the generated file.
-*   **Branched Builders and Mandatory Steps:** If a builder uses `.BranchFrom<BaseBuilder>()`, it must define at least one mandatory (non-default) step via `AddStep<T>(...)` *without* a `defaultValueFactory`. This step is used to generate the extension method that transitions from the base builder into the branched builder.
+*   **Branched Builders and Mandatory Steps:** If a builder uses `.BranchFromStepBefore<BaseBuilder>()`, it must define at least one mandatory (non-default) step via `AddStep<T>(...)` *without* a `defaultValueFactory`. This step is used to generate the extension method that transitions from the base builder into the branched builder.
 *   **Default `Build()` Factory and Type Matching:**
     *   When providing a default factory to `CreateBuilderFor<TBuilder, TTarget>(yourFactory)` to enable a parameterless `Build()` extension method, the `TBuilder` generic type argument *must exactly match* the fully qualified name (including generics) of the current builder configuration class being generated.
     *   If you use `CreateBuilderFor<TTarget>(yourFactory)` (single generic argument), this condition is implicitly met.

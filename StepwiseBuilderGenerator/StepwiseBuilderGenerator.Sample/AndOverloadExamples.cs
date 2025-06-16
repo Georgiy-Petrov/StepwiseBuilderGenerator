@@ -133,7 +133,7 @@ public partial class OverloadsInBranchCallExample
     public OverloadsInBranchCallExample()
     {
         GenerateStepwiseBuilder
-            .BranchFrom<SimpleOverloadExample>("SetName")
+            .BranchFromStepBefore<SimpleOverloadExample>("SetName")
             .AddStep<string>("SetAddress")
             .AndOverload<int, string>(_ => "42")
             .AddStep<string>("SetAddress1")

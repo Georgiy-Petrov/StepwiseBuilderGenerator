@@ -212,7 +212,7 @@ public partial class StepsWithDefaultValuesSkipToNamedOverloadInBranchExample
     public StepsWithDefaultValuesSkipToNamedOverloadInBranchExample()
     {
         GenerateStepwiseBuilder
-            .BranchFrom<StepsWithDefaultValuesSkipToNamedOverloadExample>("SetAge")
+            .BranchFromStepBefore<StepsWithDefaultValuesSkipToNamedOverloadExample>("SetAge")
             .AddStep<int>("SetAge1", defaultValueFactory: () => 42)
             .AddStep<int>("SetAge2", defaultValueFactory: () => 42)
             .AddStep<int>("SetAge3", defaultValueFactory: () => 42)
@@ -229,7 +229,7 @@ public partial class StepsWithDefaultValuesInBranchFirstStepExample
     public StepsWithDefaultValuesInBranchFirstStepExample()
     {
         GenerateStepwiseBuilder
-            .BranchFrom<StepsWithDefaultValuesSkipToNamedOverloadExample>("SetAge")
+            .BranchFromStepBefore<StepsWithDefaultValuesSkipToNamedOverloadExample>("SetAge")
             .AddStep<int>("SetAgeWithDefault", defaultValueFactory: () => 42)
             .AddStep<int>("SetAgeWithDefault1")
             .CreateBuilderFor<string>();

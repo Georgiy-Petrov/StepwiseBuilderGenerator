@@ -190,11 +190,11 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                     classDeclaration.ConstraintClauses.ToString()
                 );
 
-                // Check if the configuration includes a '.BranchFrom<OtherBuilder>(...)' call to extend another builder.
+                // Check if the configuration includes a '.BranchFromStepBefore<OtherBuilder>(...)' call to extend another builder.
                 var sidePathForBuilders =
                     invocation
                         .CollectMethodsInChain()
-                        .Where(static mi => mi.MethodName == "BranchFrom")
+                        .Where(static mi => mi.MethodName == "BranchFromStepBefore")
                         .Select(static mi =>
                         {
                             // Extract the name of the builder to branch from
@@ -202,11 +202,11 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                 string.Join("", mi.GenericArguments!.Value.GetArray()![0].TakeWhile(c => c != '<'));
                             // Extract the step name in the base builder where branching occurs
                             var stepName =
-                                mi.Arguments[ArgumentType.BranchFromStepName]!.ToString();
+                                mi.Arguments[ArgumentType.BranchFromStepBeforeStepName]!.ToString();
 
                             return new SidePathInfo(builderToExtendName, stepName);
                         })
-                        .SingleOrDefault(); // Assuming only one BranchFrom call per builder
+                        .SingleOrDefault(); // Assuming only one BranchFromStepBefore call per builder
 
                 var builderNamespace = syntaxContext.TargetSymbol.ContainingNamespace.ToString();
 
@@ -623,6 +623,7 @@ public class StepwiseBuilderGenerator : IIncrementalGenerator
                                        {
                                            // Create the branched builder, passing the original, and call its first step method
                                            return new {{className}}{{genericParams}}(({{builderToExtendName}}{{genericParams}})originalStep)
+                                               .Initialize()
                                                .{{firstStepInfo.StepName}}(value);
                                        }
                                    }

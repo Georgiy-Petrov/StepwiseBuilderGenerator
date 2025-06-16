@@ -73,7 +73,7 @@ internal static class Extensions
         var parameters = new[]
         {
             ArgumentType.StepName, ArgumentType.FieldName, ArgumentType.DefaultValueFactory,
-            ArgumentType.BranchFromStepName, ArgumentType.AndOverloadMapper, ArgumentType.AndOverloadNewName
+            ArgumentType.BranchFromStepBeforeStepName, ArgumentType.AndOverloadMapper, ArgumentType.AndOverloadNewName
         };
 
         return parameters.ToDictionary(parameter => parameter, parameter => GetArgument(argumentList, parameter));

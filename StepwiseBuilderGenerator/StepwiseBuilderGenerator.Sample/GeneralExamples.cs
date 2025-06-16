@@ -272,7 +272,7 @@ namespace StepwiseBuilderGenerator.Sample
 
     /// <summary>
     /// A straightforward base builder with three steps: FirstStep, SecondStep, and ThirdStep.
-    /// Other classes can branch off before any of these steps using BranchFrom(...).
+    /// Other classes can branch off before any of these steps using BranchFromStepBefore(...).
     /// </summary>
     [StepwiseBuilder]
     public partial class SimpleBuilder

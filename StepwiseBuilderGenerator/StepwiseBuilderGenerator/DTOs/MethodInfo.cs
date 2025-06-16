@@ -19,7 +19,7 @@ internal enum ArgumentType
     StepName,
     FieldName,
     DefaultValueFactory,
-    BranchFromStepName,
+    BranchFromStepBeforeStepName,
     AndOverloadMapper,
     AndOverloadNewName,
 }
@@ -33,7 +33,7 @@ internal static class ArgumentTypeExtensions
                 ArgumentType.StepName => 0,
                 ArgumentType.FieldName => 1,
                 ArgumentType.DefaultValueFactory => 2,
-                ArgumentType.BranchFromStepName => 0,
+                ArgumentType.BranchFromStepBeforeStepName => 0,
                 ArgumentType.AndOverloadMapper => 0,
                 ArgumentType.AndOverloadNewName => 1,
                 _ => throw new ArgumentOutOfRangeException(nameof(argumentType), argumentType, null)
@@ -46,7 +46,7 @@ internal static class ArgumentTypeExtensions
                 ArgumentType.StepName => "stepName",
                 ArgumentType.FieldName => "fieldName",
                 ArgumentType.DefaultValueFactory => "defaultValueFactory",
-                ArgumentType.BranchFromStepName => "stepName",
+                ArgumentType.BranchFromStepBeforeStepName => "stepName",
                 ArgumentType.AndOverloadMapper => "mapper",
                 ArgumentType.AndOverloadNewName => "newName",
                 _ => throw new ArgumentOutOfRangeException(nameof(argumentType), argumentType, null)
